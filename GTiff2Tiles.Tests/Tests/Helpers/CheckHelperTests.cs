@@ -77,6 +77,26 @@ public sealed class CheckHelperTests
         Assert.Throws<ArgumentException>(() => CheckHelper.CheckFile(_in4326, null, ext));
     }
 
+    [Test]
+    public void CheckOutputFilePathNormal()
+    {
+        string filePath = Path.Combine(_outPath, "tile.png");
+
+        Directory.CreateDirectory(_outPath);
+
+        Assert.DoesNotThrow(() => CheckHelper.CheckOutputFilePath(filePath));
+
+        Directory.Delete(_outPath);
+    }
+
+    [Test]
+    public void CheckOutputFilePathMissingDirectory()
+    {
+        string filePath = Path.Combine(_outPath, "tile.png");
+
+        Assert.Throws<DirectoryNotFoundException>(() => CheckHelper.CheckOutputFilePath(filePath));
+    }
+
     #endregion
 
     #region CheckDirectory

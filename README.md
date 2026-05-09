@@ -31,6 +31,18 @@ Outdated docs for release 1.4.x Core's API are available on [GitHub Wiki](https:
 
 In [Examples](https://github.com/Gigas002/GTiff2Tiles/tree/master/Examples) directory you can find **GeoTIFFs** for some tests
 
+## Console viewer option
+
+The CLI can also generate a simple slippy-map QA page in the tile output root:
+
+```bash
+GTiff2Tiles.Console -i input.tif -o output --minz 0 --maxz 12 --coordinates mercator --tms false --slippymap-html true
+```
+
+When enabled, the console writes `slippy-map.html` into the output directory. The page uses OpenStreetMap as the base layer, overlays the generated tiles via relative `./{z}/{x}/{y}` paths, and includes an opacity slider for alignment checks. The generated HTML also sets a referrer policy so OSM tiles are more likely to load correctly from a local preview server.
+
+This viewer is only supported for Web Mercator / XYZ output (`--coordinates mercator --tms false`), because that is the addressing and projection expected by OpenStreetMap and Leaflet.
+
 ## Contributing
 
 Feel free to contribute if you want to, I'll review everything

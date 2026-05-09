@@ -1,4 +1,4 @@
-﻿using CommandLine;
+using CommandLine;
 using GTiff2Tiles.Core.Constants;
 
 // ReSharper disable All
@@ -124,13 +124,19 @@ public class Options
     [Option("tilesize", Required = false, HelpText = "Ready tile's size; 256 by default")]
     public int TileSize { get; set; } = 256;
 
-
     /// <summary>
     /// Do you want to generate tilemapresource.xml?
     /// <remarks><para/><see langword="false"/> by default</remarks>
     /// </summary>
     [Option("tmr", Required = false, HelpText = "Do you want to generate tilemapresource.xml? False by default")]
     public string IsTmr { get; set; } = "false";
+
+    /// <summary>
+    /// Do you want to generate a slippy map HTML viewer?
+    /// <remarks><para/><see langword="false"/> by default</remarks>
+    /// </summary>
+    [Option("slippymap-html", Required = false, HelpText = "Generate slippy-map HTML viewer in output directory; requires mercator coordinates and --tms false; False by default")]
+    public string IsSlippyMapHtml { get; set; } = "false";
 
     #endregion
 }

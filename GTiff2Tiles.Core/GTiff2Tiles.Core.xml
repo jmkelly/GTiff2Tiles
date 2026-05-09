@@ -1152,6 +1152,11 @@
             <exception cref="T:System.IO.FileNotFoundException"/>
             <exception cref="T:GTiff2Tiles.Core.Exceptions.FileException"/>
         </member>
+        <member name="M:GTiff2Tiles.Core.Helpers.CheckHelper.CheckOutputFilePath(System.String)">
+            <summary>
+            Checks that an output file path is provided and its parent directory exists.
+            </summary>
+        </member>
         <member name="M:GTiff2Tiles.Core.Helpers.CheckHelper.CheckDirectory(System.String,System.Nullable{System.Boolean})">
             <summary>
             Checks, if directory's path is not empty, creates directory if it doesn't exist
@@ -1288,6 +1293,41 @@
         <member name="M:GTiff2Tiles.Core.Images.RasterTileLayout.#ctor(System.Double,System.Double,System.Int32,System.Int32,System.Double,System.Double,System.Int32,System.Int32)">
             <summary>
             Primitive read/write layout for rendering one raster tile.
+            </summary>
+        </member>
+        <member name="P:GTiff2Tiles.Core.Images.RasterTileLayout.ReadLeft">
+            <summary>
+            Integer crop left edge.
+            </summary>
+        </member>
+        <member name="P:GTiff2Tiles.Core.Images.RasterTileLayout.ReadTop">
+            <summary>
+            Integer crop top edge.
+            </summary>
+        </member>
+        <member name="P:GTiff2Tiles.Core.Images.RasterTileLayout.WriteLeft">
+            <summary>
+            Integer write left edge.
+            </summary>
+        </member>
+        <member name="P:GTiff2Tiles.Core.Images.RasterTileLayout.WriteTop">
+            <summary>
+            Integer write top edge.
+            </summary>
+        </member>
+        <member name="P:GTiff2Tiles.Core.Images.RasterTileLayout.XScale">
+            <summary>
+            Horizontal resize factor.
+            </summary>
+        </member>
+        <member name="P:GTiff2Tiles.Core.Images.RasterTileLayout.YScale">
+            <summary>
+            Vertical resize factor.
+            </summary>
+        </member>
+        <member name="P:GTiff2Tiles.Core.Images.RasterTileLayout.HasSameReadAndWriteSize">
+            <summary>
+            Returns <see langword="true"/> when resize can be skipped.
             </summary>
         </member>
         <member name="M:GTiff2Tiles.Core.Images.RasterTileLayout.WritesWholeTile(GTiff2Tiles.Core.Images.Size)">

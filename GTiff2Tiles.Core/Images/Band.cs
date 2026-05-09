@@ -5,8 +5,12 @@ namespace GTiff2Tiles.Core.Images;
 /// <summary>
 /// Represents image band metadata and helpers.
 /// </summary>
-public class Band
+public sealed class Band
 {
+    private static readonly double[] DefaultBand1 = [DefaultValue];
+    private static readonly double[] DefaultBand2 = [DefaultValue, DefaultValue];
+    private static readonly double[] DefaultBand3 = [DefaultValue, DefaultValue, DefaultValue];
+
     /// <summary>
     /// Default band value.
     /// </summary>
@@ -37,9 +41,7 @@ public class Band
         ArgumentNullException.ThrowIfNull(bands);
 
         foreach (Band band in bands)
-        {
             image = image.Bandjoin(band.Value);
-        }
     }
 
     /// <summary>
@@ -49,9 +51,32 @@ public class Band
     {
         ArgumentNullException.ThrowIfNull(image);
 
-        while (image.Bands < bandsCount)
+        int missingBandsCount = bandsCount - image.Bands;
+
+        if (missingBandsCount <= 0)
+            return;
+
+        if (missingBandsCount == 1 && (image.Bands == 1 || image.Bands == 3))
         {
-            image = image.Bandjoin(DefaultValue);
+            image = image.AddAlpha();
+            return;
         }
+
+        image = image.BandjoinConst(GetDefaultBandValues(missingBandsCount));
+    }
+
+    private static double[] GetDefaultBandValues(int missingBandsCount) => missingBandsCount switch
+    {
+        1 => DefaultBand1,
+        2 => DefaultBand2,
+        3 => DefaultBand3,
+        _ => CreateDefaultBandValues(missingBandsCount)
+    };
+
+    private static double[] CreateDefaultBandValues(int missingBandsCount)
+    {
+        double[] values = new double[missingBandsCount];
+        Array.Fill(values, DefaultValue);
+        return values;
     }
 }

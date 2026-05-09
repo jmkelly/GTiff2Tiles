@@ -70,7 +70,7 @@ public sealed class ArgsTests
             MaxCoordinate = new GeodeticCoordinate(1.0, 1.0), OutputDirectoryPath = string.Empty,
             Progress = null, ThreadsCount = 1000, TileSize = Tile.DefaultSize, TmsCompatible = true,
             TileCacheCount = 4, TileExtension = TileExtension.Webp, TileInterpolation = NetVips.Enums.Kernel.Cubic,
-            TimePrinter = Console.WriteLine, GeoCoordinateSystem = CoordinateSystem.Epsg3857
+            TimePrinter = global::System.Console.WriteLine, GeoCoordinateSystem = CoordinateSystem.Epsg3857
         };
     });
 
@@ -126,7 +126,7 @@ public sealed class ArgsTests
 
         Assert.DoesNotThrow(() =>
         {
-            WriteRasterTilesArgs.PrintTime pt = Console.WriteLine;
+            WriteRasterTilesArgs.PrintTime pt = global::System.Console.WriteLine;
             args.TimePrinter = pt;
             args.TimePrinter.Invoke("message");
         });

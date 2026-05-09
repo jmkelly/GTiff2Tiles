@@ -9,7 +9,6 @@ using GTiff2Tiles.Core;
 using GTiff2Tiles.Core.Constants;
 using GTiff2Tiles.Core.Enums;
 using GTiff2Tiles.Core.GeoTiffs;
-using GTiff2Tiles.Core.Helpers;
 using GTiff2Tiles.Core.Images;
 using GTiff2Tiles.Core.TileMapResource;
 using GTiff2Tiles.Core.Tiles;
@@ -111,6 +110,11 @@ internal static class Program
     private static bool IsTmr { get; set; }
 
     /// <summary>
+    /// Do you want to create a slippy map HTML page?
+    /// </summary>
+    private static bool IsSlippyMapHtml { get; set; }
+
+    /// <summary>
     /// tilemapresource.xml
     /// </summary>
     private const string TmrName = "tilemapresource.xml";
@@ -133,7 +137,6 @@ internal static class Program
         }
         catch (Exception exception)
         {
-            // Catch some uncaught parsing errors
             Helpers.ErrorHelper.PrintException(exception);
 
             return;
@@ -146,19 +149,26 @@ internal static class Program
             return;
         }
 
-        // Create progress-reporter
+        try
+        {
+            ValidateSlippyMapHtmlOptions();
+        }
+        catch (Exception exception)
+        {
+            Helpers.ErrorHelper.PrintException(exception);
+
+            return;
+        }
+
         IProgress<double> consoleProgress = IsProgress ? new Progress<double>(ProgressReporter) : null;
         Action<string> printTimeAction = IsTime ? new Action<string>(System.Console.WriteLine) : null;
 
-        // Create temp directory object
         TempDirectoryPath = Path.Combine(TempDirectoryPath,
                                          DateTime.Now.ToString(DateTimePatterns.LongWithMs, CultureInfo.InvariantCulture));
 
-        // Run tiling asynchroniously
         try
         {
-            // Check for errors
-            if (!await CheckHelper.CheckInputFileAsync(InputFilePath, TargetCoordinateSystem).ConfigureAwait(false))
+            if (!await Core.Helpers.CheckHelper.CheckInputFileAsync(InputFilePath, TargetCoordinateSystem).ConfigureAwait(false))
             {
                 string tempFilePath = Path.Combine(TempDirectoryPath, GdalWorker.TempFileName);
 
@@ -169,13 +179,11 @@ internal static class Program
 
             using Raster image = new(InputFilePath, TargetCoordinateSystem, MemCache);
 
-            // Generate tiles
             await image.WriteTilesToDirectoryAsync(OutputDirectoryPath, MinZ, MaxZ, TmsCompatible,
                                                    TileSize, TileExtension, TargetInterpolation, BandsCount,
                                                    TileCacheCount, ThreadsCount, consoleProgress, printTimeAction)
                        .ConfigureAwait(false);
 
-            // Generate tilemapresource if needed
             if (IsTmr)
             {
                 IEnumerable<TileSet> tileSets = TileSets.GenerateTileSetCollection(MinZ, MaxZ, TileSize, TargetCoordinateSystem);
@@ -185,6 +193,12 @@ internal static class Program
                 string xmlPath = $"{OutputDirectoryPath}/{TmrName}";
                 using FileStream fs = File.OpenWrite(xmlPath);
                 tileMap.Serialize(fs);
+            }
+
+            if (IsSlippyMapHtml)
+            {
+                SlippyMapHtmlWriter.Write(OutputDirectoryPath, image.MinCoordinate, image.MaxCoordinate,
+                                          TargetCoordinateSystem, MinZ, MaxZ, TmsCompatible, TileExtension);
             }
         }
         catch (Exception exception)
@@ -221,16 +235,10 @@ internal static class Program
     /// <param name="options">Command line options</param>
     private static void ParseConsoleOptions(Options options)
     {
-        // Check options and set properties
-
-        #region Required
-
         InputFilePath = options.InputFilePath;
         OutputDirectoryPath = options.OutputDirectoryPath;
         MinZ = options.MinZ;
         MaxZ = options.MaxZ;
-
-        #endregion
 
         ThreadsCount = options.ThreadsCount;
 
@@ -261,6 +269,14 @@ internal static class Program
         IsTime = bool.Parse(options.IsTime);
         TileSize = new Size(options.TileSize, options.TileSize);
         IsTmr = bool.Parse(options.IsTmr);
+        IsSlippyMapHtml = bool.Parse(options.IsSlippyMapHtml);
+    }
+
+    private static void ValidateSlippyMapHtmlOptions()
+    {
+        if (!IsSlippyMapHtml) return;
+
+        SlippyMapHtmlWriter.EnsureSupported(TargetCoordinateSystem, TmsCompatible);
     }
 
     #endregion

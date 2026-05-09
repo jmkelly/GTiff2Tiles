@@ -164,12 +164,10 @@ public class Raster : GeoTiff
         ArgumentNullException.ThrowIfNull(tileCache);
         ArgumentNullException.ThrowIfNull(tile);
 
-        double xScale = (double)layout.WriteWidth / layout.ReadWidth;
-        double yScale = (double)layout.WriteHeight / layout.ReadHeight;
+        Image tileImage = tileCache.Crop(layout.ReadLeft, layout.ReadTop, layout.ReadWidth, layout.ReadHeight);
 
-        Image tileImage = tileCache
-            .Crop((int)layout.ReadX, (int)layout.ReadY, layout.ReadWidth, layout.ReadHeight)
-            .Resize(xScale, tile.Interpolation, null, yScale);
+        if (!layout.HasSameReadAndWriteSize)
+            tileImage = tileImage.Resize(layout.XScale, tile.Interpolation, null, layout.YScale);
 
         Band.AddDefaultBands(ref tileImage, tile.BandsCount);
 
@@ -177,8 +175,8 @@ public class Raster : GeoTiff
             return tileImage;
 
         return tileImage.Embed(
-            (int)layout.WriteX,
-            (int)layout.WriteY,
+            layout.WriteLeft,
+            layout.WriteTop,
             tile.Size.Width,
             tile.Size.Height,
             extend: NetVips.Enums.Extend.Background,
@@ -196,8 +194,9 @@ public class Raster : GeoTiff
     /// </summary>
     public void WriteTileToFile(Image tileCache, RasterTile tile)
     {
+        ArgumentNullException.ThrowIfNull(tileCache);
         ArgumentNullException.ThrowIfNull(tile);
-        CheckHelper.CheckFile(tile.Path, false);
+        CheckHelper.CheckOutputFilePath(tile.Path);
 
         if (!RasterTileLayoutCalculator.TryGetLayout(this, tile, out RasterTileLayout layout))
             return;
@@ -234,6 +233,7 @@ public class Raster : GeoTiff
     /// </summary>
     public bool WriteTileToChannel(Image tileCache, RasterTile tile, ChannelWriter<RasterTile> channelWriter)
     {
+        ArgumentNullException.ThrowIfNull(tileCache);
         ArgumentNullException.ThrowIfNull(tile);
         ArgumentNullException.ThrowIfNull(channelWriter);
 
@@ -244,6 +244,7 @@ public class Raster : GeoTiff
     /// <inheritdoc cref="WriteTileToChannel"/>
     public ValueTask WriteTileToChannelAsync(Image tileCache, RasterTile tile, ChannelWriter<RasterTile> channelWriter)
     {
+        ArgumentNullException.ThrowIfNull(tileCache);
         ArgumentNullException.ThrowIfNull(tile);
         ArgumentNullException.ThrowIfNull(channelWriter);
 

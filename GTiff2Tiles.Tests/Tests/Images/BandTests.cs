@@ -124,6 +124,43 @@ public sealed class BandTests
     }
 
     [Test]
+    public void AddDefaultBandsUsesSingleNativeAppendForMultipleMissingBands()
+    {
+        Image image = Image.Black(4, 4, 1);
+
+        Band.AddDefaultBands(ref image, 4);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(image.Bands, Is.EqualTo(4));
+            Assert.That(image[1].Avg(), Is.EqualTo(Band.DefaultValue));
+            Assert.That(image[2].Avg(), Is.EqualTo(Band.DefaultValue));
+            Assert.That(image[3].Avg(), Is.EqualTo(Band.DefaultValue));
+        });
+
+        image.Dispose();
+    }
+
+    [Test]
+    public void AddDefaultBandsUsesAlphaShortcutWhenOneBandMissing()
+    {
+        Image image = Image.Black(4, 4, 3);
+
+        Band.AddDefaultBands(ref image, 4);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(image.Bands, Is.EqualTo(4));
+            Assert.That(image[0].Avg(), Is.EqualTo(0));
+            Assert.That(image[1].Avg(), Is.EqualTo(0));
+            Assert.That(image[2].Avg(), Is.EqualTo(0));
+            Assert.That(image[3].Avg(), Is.EqualTo(Band.DefaultValue));
+        });
+
+        image.Dispose();
+    }
+
+    [Test]
     public void AddDefaultBandsNullImage()
     {
         Image image = null;

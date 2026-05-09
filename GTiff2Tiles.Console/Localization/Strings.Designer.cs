@@ -77,5 +77,41 @@ namespace GTiff2Tiles.Console.Localization {
                 return ResourceManager.GetString("ParsingError", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Slippy map HTML generation requires mercator coordinates (--coordinates mercator) to align with OpenStreetMap and Leaflet..
+        /// </summary>
+        internal static string SlippyMapHtmlRequiresMercator {
+            get {
+                return ResourceManager.GetString("SlippyMapHtmlRequiresMercator", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Slippy map HTML generation requires XYZ tile addressing (--tms false)..
+        /// </summary>
+        internal static string SlippyMapHtmlRequiresXyz {
+            get {
+                return ResourceManager.GetString("SlippyMapHtmlRequiresXyz", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Unable to convert the maximum tile extent coordinate for slippy map HTML generation..
+        /// </summary>
+        internal static string SlippyMapHtmlUnsupportedMaxCoordinate {
+            get {
+                return ResourceManager.GetString("SlippyMapHtmlUnsupportedMaxCoordinate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Unable to convert the minimum tile extent coordinate for slippy map HTML generation..
+        /// </summary>
+        internal static string SlippyMapHtmlUnsupportedMinCoordinate {
+            get {
+                return ResourceManager.GetString("SlippyMapHtmlUnsupportedMinCoordinate", resourceCulture);
+            }
+        }
     }
 }

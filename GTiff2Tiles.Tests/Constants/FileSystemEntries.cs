@@ -53,6 +53,8 @@ internal static class FileSystemEntries
 
     private const string OutputDirectoryName = "Output";
 
+    internal const string SlippyMapHtmlFileName = "slippy-map.html";
+
     internal static string OutputDirectoryPath => Path.Combine(ExamplesDirectoryPath, OutputDirectoryName);
 
     internal static DirectoryInfo OutputDirectoryInfo => new(OutputDirectoryPath);

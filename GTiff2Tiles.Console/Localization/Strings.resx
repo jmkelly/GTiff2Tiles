@@ -124,4 +124,16 @@
   <data name="ParsingError" xml:space="preserve">
     <value>Unable to parse console options</value>
   </data>
+  <data name="SlippyMapHtmlRequiresMercator" xml:space="preserve">
+    <value>Slippy map HTML generation requires mercator coordinates (--coordinates mercator) to align with OpenStreetMap and Leaflet.</value>
+  </data>
+  <data name="SlippyMapHtmlRequiresXyz" xml:space="preserve">
+    <value>Slippy map HTML generation requires XYZ tile addressing (--tms false).</value>
+  </data>
+  <data name="SlippyMapHtmlUnsupportedMaxCoordinate" xml:space="preserve">
+    <value>Unable to convert the maximum tile extent coordinate for slippy map HTML generation.</value>
+  </data>
+  <data name="SlippyMapHtmlUnsupportedMinCoordinate" xml:space="preserve">
+    <value>Unable to convert the minimum tile extent coordinate for slippy map HTML generation.</value>
+  </data>
 </root>

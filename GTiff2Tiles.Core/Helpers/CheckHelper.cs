@@ -69,6 +69,23 @@ public static class CheckHelper
     }
 
     /// <summary>
+    /// Checks that an output file path is provided and its parent directory exists.
+    /// </summary>
+    public static void CheckOutputFilePath(string? filePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+
+        string? directoryPath = Path.GetDirectoryName(filePath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(directoryPath, nameof(filePath));
+
+        if (!Directory.Exists(directoryPath))
+        {
+            string err = string.Format(Strings.Culture, Strings.DoesntExist, directoryPath);
+            throw new DirectoryNotFoundException(err);
+        }
+    }
+
+    /// <summary>
     /// Checks, if directory's path is not empty, creates directory if it doesn't exist
     /// and checks if it's empty or not
     /// </summary>

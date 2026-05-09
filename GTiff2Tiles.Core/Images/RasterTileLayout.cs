@@ -19,6 +19,41 @@ public readonly record struct RasterTileLayout(
     int WriteHeight)
 {
     /// <summary>
+    /// Integer crop left edge.
+    /// </summary>
+    public int ReadLeft => (int)ReadX;
+
+    /// <summary>
+    /// Integer crop top edge.
+    /// </summary>
+    public int ReadTop => (int)ReadY;
+
+    /// <summary>
+    /// Integer write left edge.
+    /// </summary>
+    public int WriteLeft => (int)WriteX;
+
+    /// <summary>
+    /// Integer write top edge.
+    /// </summary>
+    public int WriteTop => (int)WriteY;
+
+    /// <summary>
+    /// Horizontal resize factor.
+    /// </summary>
+    public double XScale => (double)WriteWidth / ReadWidth;
+
+    /// <summary>
+    /// Vertical resize factor.
+    /// </summary>
+    public double YScale => (double)WriteHeight / ReadHeight;
+
+    /// <summary>
+    /// Returns <see langword="true"/> when resize can be skipped.
+    /// </summary>
+    public bool HasSameReadAndWriteSize => ReadWidth == WriteWidth && ReadHeight == WriteHeight;
+
+    /// <summary>
     /// Returns <see langword="true"/> when the source pixels cover the whole target tile.
     /// </summary>
     public bool WritesWholeTile(Size tileSize)
@@ -26,10 +61,10 @@ public readonly record struct RasterTileLayout(
         ArgumentNullException.ThrowIfNull(tileSize);
 
         return
-        WriteX == 0.0 &&
-        WriteY == 0.0 &&
-        WriteWidth == tileSize.Width &&
-        WriteHeight == tileSize.Height;
+            WriteX == 0.0 &&
+            WriteY == 0.0 &&
+            WriteWidth == tileSize.Width &&
+            WriteHeight == tileSize.Height;
     }
 }
 
