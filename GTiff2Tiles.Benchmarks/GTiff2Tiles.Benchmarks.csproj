@@ -2,13 +2,15 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <NoWarn>$(NoWarn);CS0169;CS8632;CA1515;CA1724;CA1823;CA2007</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
-    <PackageReference Include="MaxRev.Gdal.Universal" Version="3.12.3.499" />
+    <PackageReference Include="MaxRev.Gdal.Universal" Version="3.12.4.520" />
     <PackageReference Include="NetVips.Native" Version="8.18.2" />
+    <PackageReference Include="Testcontainers" Version="4.11.0" />
   </ItemGroup>
 
   <ItemGroup>

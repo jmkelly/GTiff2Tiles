@@ -11,7 +11,7 @@ public class ViewLocator : IDataTemplate
     /// <inheritdoc/>
     public Control Build(object param)
     {
-        if (param == null) throw new ArgumentNullException(nameof(param));
+        ArgumentNullException.ThrowIfNull(param);
 
         var paramType = param.GetType();
         var name = paramType.FullName!.Replace("ViewModel", "View", StringComparison.InvariantCulture);

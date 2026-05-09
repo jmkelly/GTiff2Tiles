@@ -119,8 +119,8 @@ public class WriteRasterTilesArgs : IWriteTilesArgs
     {
         #region Preconditions checks
 
-        if (minZ < 0) throw new ArgumentOutOfRangeException(nameof(minZ));
-        if (maxZ < minZ) throw new ArgumentOutOfRangeException(nameof(maxZ));
+        ArgumentOutOfRangeException.ThrowIfNegative(minZ);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxZ, minZ);
 
         #endregion
 

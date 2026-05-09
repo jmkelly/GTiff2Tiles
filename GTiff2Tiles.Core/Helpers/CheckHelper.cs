@@ -31,7 +31,7 @@ public static class CheckHelper
     public static void CheckFile(string? filePath, bool? shouldExist = true, string? fileExtension = null)
     {
         // Check file path
-        if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentNullException(nameof(filePath));
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
         string err;
 
@@ -80,7 +80,7 @@ public static class CheckHelper
     public static void CheckDirectory(string? directoryPath, bool? shouldBeEmpty = null)
     {
         // Check directory's path
-        if (string.IsNullOrWhiteSpace(directoryPath)) throw new ArgumentNullException(nameof(directoryPath));
+        ArgumentException.ThrowIfNullOrWhiteSpace(directoryPath);
 
         // Try to create directory
         DirectoryInfo directoryInfo = Directory.CreateDirectory(directoryPath);

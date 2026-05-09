@@ -3,6 +3,7 @@
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <NoWarn>$(NoWarn);CA1515</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -10,10 +11,11 @@
         <PackageReference Include="Avalonia" Version="11.3.13" />
         <PackageReference Include="Avalonia.Desktop" Version="11.3.13" />
         <PackageReference Include="Avalonia.Diagnostics" Version="11.3.13" />
-        <PackageReference Include="Avalonia.ReactiveUI" Version="11.3.8" />
+        <PackageReference Include="Avalonia.ReactiveUI" Version="11.3.9" />
         <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.13" />
         <PackageReference Include="DialogHost.Avalonia" Version="0.11.0" />
-        <PackageReference Include="MaxRev.Gdal.Universal" Version="3.12.3.499" />
+        <PackageReference Include="MaxRev.Gdal.Universal" Version="3.12.4.520" />
+        <PackageReference Include="Tmds.DBus.Protocol" Version="0.93.0" />
         <PackageReference Include="NetVips.Native" Version="8.18.2" />
 
         <!-- Internal dependencies -->

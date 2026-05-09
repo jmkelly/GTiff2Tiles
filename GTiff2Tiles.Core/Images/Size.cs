@@ -47,8 +47,8 @@ public sealed class Size : IEquatable<Size>
     {
         #region Preconditions checks
 
-        if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
-        if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
 
         #endregion
 
@@ -109,8 +109,8 @@ public sealed class Size : IEquatable<Size>
     {
         #region Preconditions checks
 
-        if (size1 == null) throw new ArgumentNullException(nameof(size1));
-        if (size2 == null) throw new ArgumentNullException(nameof(size2));
+        ArgumentNullException.ThrowIfNull(size1);
+        ArgumentNullException.ThrowIfNull(size2);
 
         #endregion
 
@@ -132,8 +132,8 @@ public sealed class Size : IEquatable<Size>
     {
         #region Preconditions checks
 
-        if (size1 == null) throw new ArgumentNullException(nameof(size1));
-        if (size2 == null) throw new ArgumentNullException(nameof(size2));
+        ArgumentNullException.ThrowIfNull(size1);
+        ArgumentNullException.ThrowIfNull(size2);
 
         #endregion
 
@@ -155,8 +155,8 @@ public sealed class Size : IEquatable<Size>
     {
         #region Preconditions checks
 
-        if (size1 == null) throw new ArgumentNullException(nameof(size1));
-        if (size2 == null) throw new ArgumentNullException(nameof(size2));
+        ArgumentNullException.ThrowIfNull(size1);
+        ArgumentNullException.ThrowIfNull(size2);
 
         #endregion
 
@@ -178,8 +178,8 @@ public sealed class Size : IEquatable<Size>
     {
         #region Preconditions checks
 
-        if (size1 == null) throw new ArgumentNullException(nameof(size1));
-        if (size2 == null) throw new ArgumentNullException(nameof(size2));
+        ArgumentNullException.ThrowIfNull(size1);
+        ArgumentNullException.ThrowIfNull(size2);
 
         #endregion
 

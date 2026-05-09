@@ -56,7 +56,7 @@ public class Coordinate : ICoordinate
     {
         #region Preconditions checks
 
-        if (digits < 0) throw new ArgumentOutOfRangeException(nameof(digits));
+        ArgumentOutOfRangeException.ThrowIfNegative(digits);
 
         #endregion
 
@@ -130,8 +130,8 @@ public class Coordinate : ICoordinate
     /// <returns>New coordinate</returns>
     public static Coordinate operator +(Coordinate coordinate1, Coordinate coordinate2)
     {
-        if (coordinate1 == null) throw new ArgumentNullException(nameof(coordinate1));
-        if (coordinate2 == null) throw new ArgumentNullException(nameof(coordinate2));
+        ArgumentNullException.ThrowIfNull(coordinate1);
+        ArgumentNullException.ThrowIfNull(coordinate2);
 
         return new Coordinate(coordinate1.X + coordinate2.X, coordinate1.Y + coordinate2.Y);
     }
@@ -148,8 +148,8 @@ public class Coordinate : ICoordinate
     /// <returns>New coordinate</returns>
     public static Coordinate operator -(Coordinate coordinate1, Coordinate coordinate2)
     {
-        if (coordinate1 == null) throw new ArgumentNullException(nameof(coordinate1));
-        if (coordinate2 == null) throw new ArgumentNullException(nameof(coordinate2));
+        ArgumentNullException.ThrowIfNull(coordinate1);
+        ArgumentNullException.ThrowIfNull(coordinate2);
 
         return new Coordinate(coordinate1.X - coordinate2.X, coordinate1.Y - coordinate2.Y);
     }
@@ -166,8 +166,8 @@ public class Coordinate : ICoordinate
     /// <returns>New coordinate</returns>
     public static Coordinate operator *(Coordinate coordinate1, Coordinate coordinate2)
     {
-        if (coordinate1 == null) throw new ArgumentNullException(nameof(coordinate1));
-        if (coordinate2 == null) throw new ArgumentNullException(nameof(coordinate2));
+        ArgumentNullException.ThrowIfNull(coordinate1);
+        ArgumentNullException.ThrowIfNull(coordinate2);
 
         return new Coordinate(coordinate1.X * coordinate2.X, coordinate1.Y * coordinate2.Y);
     }
@@ -184,8 +184,8 @@ public class Coordinate : ICoordinate
     /// <returns>New coordinate</returns>
     public static Coordinate operator /(Coordinate coordinate1, Coordinate coordinate2)
     {
-        if (coordinate1 == null) throw new ArgumentNullException(nameof(coordinate1));
-        if (coordinate2 == null) throw new ArgumentNullException(nameof(coordinate2));
+        ArgumentNullException.ThrowIfNull(coordinate1);
+        ArgumentNullException.ThrowIfNull(coordinate2);
 
         return new Coordinate(coordinate1.X / coordinate2.X, coordinate1.Y / coordinate2.Y);
     }

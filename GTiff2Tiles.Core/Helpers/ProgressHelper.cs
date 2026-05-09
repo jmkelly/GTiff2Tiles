@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
+using System.Threading;
 using GTiff2Tiles.Core.Localization;
 
 // ReSharper disable MemberCanBePrivate.Global
@@ -11,6 +12,16 @@ namespace GTiff2Tiles.Core.Helpers;
 /// </summary>
 public static class ProgressHelper
 {
+    internal static TileProgressReporter CreateTileProgressReporter(int tilesCount,
+                                                                   IProgress<double> progress = null,
+                                                                   Stopwatch stopwatch = null,
+                                                                   Action<string> reporter = null)
+    {
+        return progress == null && reporter == null
+            ? null
+            : new TileProgressReporter(tilesCount, progress, stopwatch, reporter);
+    }
+
     /// <summary>
     /// Calculate estimated time left, based on your current progress and time from start
     /// </summary>
@@ -25,7 +36,7 @@ public static class ProgressHelper
         #region Preconditions checks
 
         if (percentage <= 0.0 || percentage > 100.0) throw new ArgumentOutOfRangeException(nameof(percentage));
-        if (stopwatch == null) throw new ArgumentNullException(nameof(stopwatch));
+        ArgumentNullException.ThrowIfNull(stopwatch);
 
         #endregion
 
@@ -61,5 +72,56 @@ public static class ProgressHelper
                                             timeSpan.Days, timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds,
                                             timeSpan.Milliseconds);
         reporter.Invoke(reportString);
+    }
+}
+
+internal sealed class TileProgressReporter
+{
+    private const int MaxProgressUpdates = 100;
+
+    private readonly object _reportLock = new();
+    private readonly int _tilesCount;
+    private readonly int _reportInterval;
+    private readonly IProgress<double> _progress;
+    private readonly Stopwatch _stopwatch;
+    private readonly Action<string> _reporter;
+
+    private int _completedTiles;
+    private int _lastReportedTileCount;
+
+    public TileProgressReporter(int tilesCount, IProgress<double> progress = null,
+                                Stopwatch stopwatch = null, Action<string> reporter = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(tilesCount);
+
+        _tilesCount = tilesCount;
+        _progress = progress;
+        _stopwatch = stopwatch;
+        _reporter = reporter;
+        _reportInterval = Math.Max(1, tilesCount / MaxProgressUpdates);
+    }
+
+    public void Advance()
+    {
+        int completedTiles = Interlocked.Increment(ref _completedTiles);
+
+        int reportTileCount = completedTiles == _tilesCount
+            ? _tilesCount
+            : completedTiles - completedTiles % _reportInterval;
+
+        if (reportTileCount <= 0) return;
+        if (reportTileCount <= Volatile.Read(ref _lastReportedTileCount)) return;
+
+        lock (_reportLock)
+        {
+            if (reportTileCount <= _lastReportedTileCount) return;
+
+            _lastReportedTileCount = reportTileCount;
+
+            double percentage = (double)reportTileCount / _tilesCount * 100.0;
+
+            _progress?.Report(percentage);
+            ProgressHelper.PrintEstimatedTimeLeft(percentage, _stopwatch, _reporter);
+        }
     }
 }

@@ -167,7 +167,7 @@ public class MessageBoxViewModel : ViewModelBase //, IDisposable
     /// <param name="dialogHostId">Parent DialogHost to show</param>
     public static Task ShowAsync(Exception exception, string dialogHostId = null)
     {
-        if (exception == null) throw new ArgumentNullException(nameof(exception));
+        ArgumentNullException.ThrowIfNull(exception);
 
         return ShowAsync(exception.Message, false, dialogHostId: dialogHostId);
     }

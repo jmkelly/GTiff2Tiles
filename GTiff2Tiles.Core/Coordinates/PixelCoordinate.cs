@@ -23,8 +23,8 @@ public class PixelCoordinate : Coordinate
     /// <inheritdoc />
     public PixelCoordinate(double x, double y) : base(x, y)
     {
-        if (x < 0) throw new ArgumentOutOfRangeException(nameof(x));
-        if (y < 0) throw new ArgumentOutOfRangeException(nameof(y));
+        ArgumentOutOfRangeException.ThrowIfNegative(x);
+        ArgumentOutOfRangeException.ThrowIfNegative(y);
     }
 
     #endregion
@@ -43,8 +43,8 @@ public class PixelCoordinate : Coordinate
     {
         #region Preconditions checks
 
-        if (z < 0) throw new ArgumentOutOfRangeException(nameof(z));
-        if (tileSize == null) throw new ArgumentNullException(nameof(tileSize));
+        ArgumentOutOfRangeException.ThrowIfNegative(z);
+        ArgumentNullException.ThrowIfNull(tileSize);
         if (!tileSize.IsSquare) throw new ArgumentException(Strings.NotSqare);
 
         #endregion
@@ -94,7 +94,7 @@ public class PixelCoordinate : Coordinate
     {
         #region Preconditions checks
 
-        if (z < 0) throw new ArgumentOutOfRangeException(nameof(z));
+        ArgumentOutOfRangeException.ThrowIfNegative(z);
 
         #endregion
 
@@ -138,7 +138,7 @@ public class PixelCoordinate : Coordinate
     {
         #region Preconditions checks
 
-        if (z < 0) throw new ArgumentOutOfRangeException(nameof(z));
+        ArgumentOutOfRangeException.ThrowIfNegative(z);
 
         #endregion
 
@@ -181,8 +181,8 @@ public class PixelCoordinate : Coordinate
     {
         #region Preconditions checks
 
-        if (z < 0) throw new ArgumentOutOfRangeException(nameof(z));
-        if (tileSize == null) throw new ArgumentNullException(nameof(tileSize));
+        ArgumentOutOfRangeException.ThrowIfNegative(z);
+        ArgumentNullException.ThrowIfNull(tileSize);
         if (!tileSize.IsSquare) throw new ArgumentException(Strings.NotSqare);
 
         #endregion

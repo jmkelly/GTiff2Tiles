@@ -327,7 +327,7 @@ public class DataRunnerViewModel : ViewModelBase, IDisposable
 
         if (dialRes == DialogResult.Ok)
         {
-            CancellationTokenSource.Cancel();
+            await CancellationTokenSource.CancelAsync().ConfigureAwait(true);
             ProgressPresenter.StopTimer();
         }
     }
@@ -345,7 +345,7 @@ public class DataRunnerViewModel : ViewModelBase, IDisposable
 
         try
         {
-            await GenerateTiles(runSettings);
+            await GenerateTiles(runSettings).ConfigureAwait(true);
         }
         catch (Exception exception)
         {
@@ -415,7 +415,8 @@ public class DataRunnerViewModel : ViewModelBase, IDisposable
         CheckHelper.CheckDirectory(settings.TempPath);
 
         // Required params
-        if (MaxZoom < MinZoom) throw new ArgumentOutOfRangeException(nameof(MaxZoom));
+        if (MaxZoom < MinZoom)
+            throw new ArgumentOutOfRangeException(nameof(settings), "MaxZoom must be greater than or equal to MinZoom.");
 
         // Optional params
         if (settings.IsAutoThreads) settings.ThreadsCount = Environment.ProcessorCount;

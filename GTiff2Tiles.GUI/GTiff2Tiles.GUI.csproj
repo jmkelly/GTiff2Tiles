@@ -2,7 +2,7 @@
 
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))" >
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <UseWPF>true</UseWPF>
     <StartupObject>GTiff2Tiles.GUI.App</StartupObject>
@@ -19,8 +19,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MaxRev.Gdal.WindowsRuntime.Minimal" Version="3.9.0.218" />
-    <PackageReference Include="NetVips.Native.win-x64" Version="8.15.2" />
+    <PackageReference Include="MaxRev.Gdal.WindowsRuntime.Minimal" Version="3.12.4.520" />
+    <PackageReference Include="NetVips.Native.win-x64" Version="8.18.2" />
     <PackageReference Include="Prism.DryIoc" Version="8.1.97" />
     <PackageReference Include="MaterialDesignColors" Version="2.1.4" />
     <PackageReference Include="MaterialDesignExtensions" Version="4.0.0-a02" />

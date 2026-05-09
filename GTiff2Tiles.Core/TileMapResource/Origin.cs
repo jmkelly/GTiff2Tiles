@@ -49,7 +49,7 @@ public record Origin
     {
         #region Preconditions checks
 
-        if (coordinate is null) throw new ArgumentNullException(nameof(coordinate));
+        ArgumentNullException.ThrowIfNull(coordinate);
 
         #endregion
 

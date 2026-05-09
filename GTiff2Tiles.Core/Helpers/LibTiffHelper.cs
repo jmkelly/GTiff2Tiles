@@ -6,7 +6,7 @@ namespace GTiff2Tiles.Core.Helpers;
 /// <summary>
 /// Class, that helps to disable libtiff's warnings
 /// </summary>
-internal class LibTiffHelper : TiffErrorHandler
+internal sealed class LibTiffHelper : TiffErrorHandler
 {
     /// <inheritdoc />
     public override void WarningHandler(Tiff tif, string method, string format, params object[] args)

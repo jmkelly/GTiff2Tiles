@@ -18,6 +18,22 @@ namespace GTiff2Tiles.Core;
 /// </summary>
 public static class GdalWorker
 {
+    private sealed class DatasetMetadata
+    {
+        public required string Projection { get; init; }
+
+        public required double[] GeoTransform { get; init; }
+    }
+
+    internal sealed class RasterMetadata
+    {
+        public required CoordinateSystem CoordinateSystem { get; init; }
+
+        public required GeoCoordinate MinCoordinate { get; init; }
+
+        public required GeoCoordinate MaxCoordinate { get; init; }
+    }
+
     #region Properties/Constants
 
     /// <summary>
@@ -92,7 +108,8 @@ public static class GdalWorker
         CheckHelper.CheckFile(outputFilePath, false);
         CheckHelper.CheckDirectory(Path.GetDirectoryName(outputFilePath));
 
-        if (options == null || options.Length <= 0) throw new ArgumentNullException(nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.Length <= 0) throw new ArgumentException(null, nameof(options));
 
         #endregion
 
@@ -180,6 +197,50 @@ public static class GdalWorker
 
     #region Public
 
+    private static DatasetMetadata ReadDatasetMetadata(string inputFilePath)
+    {
+        CheckHelper.CheckFile(inputFilePath);
+
+        ConfigureGdal();
+
+        using Dataset dataset = Gdal.Open(inputFilePath, Access.GA_ReadOnly);
+
+        double[] geoTransform = new double[6];
+        dataset.GetGeoTransform(geoTransform);
+
+        return new DatasetMetadata
+        {
+            Projection = dataset.GetProjection(),
+            GeoTransform = geoTransform
+        };
+    }
+
+    internal static RasterMetadata ReadRasterMetadata(string inputFilePath, Size size)
+    {
+        ArgumentNullException.ThrowIfNull(size);
+
+        DatasetMetadata datasetMetadata = ReadDatasetMetadata(inputFilePath);
+        string projString = ConvertProjectionToProj4(datasetMetadata.Projection);
+        CoordinateSystem coordinateSystem = GetCoordinateSystemFromProjection(projString);
+
+        if (coordinateSystem == CoordinateSystem.Other)
+        {
+            string err = string.Format(Strings.Culture, Strings.NotSupported, coordinateSystem);
+
+            throw new NotSupportedException(err);
+        }
+
+        (GeoCoordinate minCoordinate, GeoCoordinate maxCoordinate) =
+            GetImageBorders(datasetMetadata.GeoTransform, size, coordinateSystem);
+
+        return new RasterMetadata
+        {
+            CoordinateSystem = coordinateSystem,
+            MinCoordinate = minCoordinate,
+            MaxCoordinate = maxCoordinate
+        };
+    }
+
     /// <inheritdoc cref="GetProjStringAsync"/>
     public static string GetProjString(string inputFilePath)
     {
@@ -189,21 +250,7 @@ public static class GdalWorker
 
         #endregion
 
-        // Initialize Gdal, if needed
-        ConfigureGdal();
-
-        using Dataset dataset = Gdal.Open(inputFilePath, Access.GA_ReadOnly);
-
-        string wkt = dataset.GetProjection();
-
-        using SpatialReference spatialReference = new(wkt);
-
-        spatialReference.ExportToProj4(out string projString);
-
-        // Alternative way -- needs using System.Text.Json to deserialize
-        //spatialReference.ExportToPROJJSON(out string argout, null);
-
-        return projString;
+        return ConvertProjectionToProj4(ReadDatasetMetadata(inputFilePath).Projection);
     }
 
     /// <summary>
@@ -267,20 +314,11 @@ public static class GdalWorker
     {
         #region Preconditions checks
 
-        if (string.IsNullOrWhiteSpace(projString)) throw new ArgumentNullException(nameof(projString));
+        ArgumentException.ThrowIfNullOrWhiteSpace(projString);
 
         #endregion
 
-        bool isWgs84 = projString.Contains(GTiff2Tiles.Core.Constants.Proj.DatumWgs84, StringComparison.InvariantCulture);
-        bool isLongLat = projString.Contains(GTiff2Tiles.Core.Constants.Proj.ProjLongLat, StringComparison.InvariantCulture);
-        bool isMerc = projString.Contains(GTiff2Tiles.Core.Constants.Proj.ProjMerc, StringComparison.InvariantCulture);
-
-        return isWgs84 switch
-        {
-            true when isLongLat => CoordinateSystem.Epsg4326,
-            false when isMerc => CoordinateSystem.Epsg3857,
-            _ => CoordinateSystem.Other
-        };
+        return GetCoordinateSystemFromProjection(projString);
     }
 
     /// <summary>
@@ -297,15 +335,7 @@ public static class GdalWorker
 
         #endregion
 
-        // Initialize Gdal, if needed
-        ConfigureGdal();
-
-        using Dataset inputDataset = Gdal.Open(inputFilePath, Access.GA_ReadOnly);
-
-        double[] geoTransform = new double[6];
-        inputDataset.GetGeoTransform(geoTransform);
-
-        return geoTransform;
+        return ReadDatasetMetadata(inputFilePath).GeoTransform;
     }
 
     /// <summary>
@@ -325,11 +355,44 @@ public static class GdalWorker
 
         // File is checked inside GeteGeoTransform method, no need to check it here
 
-        if (size == null) throw new ArgumentNullException(nameof(size));
+        ArgumentNullException.ThrowIfNull(size);
 
         #endregion
 
-        double[] geoTransform = GetGeoTransform(inputFilePath);
+        return GetImageBorders(GetGeoTransform(inputFilePath), size, coordinateSystem);
+    }
+
+    private static CoordinateSystem GetCoordinateSystemFromProjection(string projection)
+    {
+        bool isWgs84 = projection.Contains(GTiff2Tiles.Core.Constants.Proj.DatumWgs84, StringComparison.InvariantCulture);
+        bool isLongLat = projection.Contains(GTiff2Tiles.Core.Constants.Proj.ProjLongLat, StringComparison.InvariantCulture);
+        bool isMerc = projection.Contains(GTiff2Tiles.Core.Constants.Proj.ProjMerc, StringComparison.InvariantCulture);
+
+        return isWgs84 switch
+        {
+            true when isLongLat => CoordinateSystem.Epsg4326,
+            false when isMerc => CoordinateSystem.Epsg3857,
+            _ => CoordinateSystem.Other
+        };
+    }
+
+    private static string ConvertProjectionToProj4(string projection)
+    {
+        using SpatialReference spatialReference = new(projection);
+
+        spatialReference.ExportToProj4(out string projString);
+
+        // Alternative way -- needs using System.Text.Json to deserialize
+        //spatialReference.ExportToPROJJSON(out string argout, null);
+
+        return projString;
+    }
+
+    private static (GeoCoordinate minCoordinate, GeoCoordinate maxCoordinate) GetImageBorders(
+        double[] geoTransform, Size size, CoordinateSystem coordinateSystem)
+    {
+        ArgumentNullException.ThrowIfNull(geoTransform);
+        ArgumentNullException.ThrowIfNull(size);
 
         double minX = geoTransform[0];
         double minY = geoTransform[3] - size.Height * geoTransform[1];

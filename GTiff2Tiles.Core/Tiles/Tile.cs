@@ -162,6 +162,7 @@ public abstract class Tile : ITile
         try
         {
             Dispose();
+            GC.SuppressFinalize(this);
 
             return default;
         }
@@ -224,7 +225,7 @@ public abstract class Tile : ITile
 
         #region Preconditions checks
 
-        if (number == null) throw new ArgumentNullException(nameof(number));
+        ArgumentNullException.ThrowIfNull(number);
 
         #endregion
 
@@ -278,8 +279,8 @@ public abstract class Tile : ITile
     {
         #region Preconditions checks
 
-        if (tile == null) throw new ArgumentNullException(nameof(tile));
-        if (tile.Bytes == null) throw new ArgumentNullException(nameof(tile));
+        ArgumentNullException.ThrowIfNull(tile);
+        ArgumentNullException.ThrowIfNull(tile.Bytes, nameof(tile));
 
         if (string.IsNullOrWhiteSpace(path)) path = tile.Path;
 

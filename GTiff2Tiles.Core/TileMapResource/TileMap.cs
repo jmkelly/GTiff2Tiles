@@ -158,7 +158,7 @@ public record TileMap
     {
         #region Precondition checks
 
-        if (stream is null) throw new ArgumentNullException(nameof(stream));
+        ArgumentNullException.ThrowIfNull(stream);
 
         #endregion
 
@@ -175,7 +175,7 @@ public record TileMap
     {
         #region Precondition checks
 
-        if (stream is null) throw new ArgumentNullException(nameof(stream));
+        ArgumentNullException.ThrowIfNull(stream);
 
         #endregion
 

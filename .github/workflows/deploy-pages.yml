@@ -14,7 +14,7 @@ on:
         description: 'dotnet sdk version'
         required: false
         type: string
-        default: '8.x'
+        default: '10.x'
       docfx-json-path:
         description: 'Path to docfx.json file'
         required: false
@@ -35,7 +35,7 @@ on:
         description: 'dotnet sdk version'
         required: false
         type: string
-        default: '8.x'
+        default: '10.x'
       docfx-json-path:
         description: 'Path to docfx.json file'
         required: false

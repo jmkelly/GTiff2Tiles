@@ -48,9 +48,9 @@ public class Number : IEquatable<Number>
     {
         #region Preconditions checks
 
-        if (x < 0) throw new ArgumentOutOfRangeException(nameof(x));
-        if (y < 0) throw new ArgumentOutOfRangeException(nameof(y));
-        if (z < 0) throw new ArgumentOutOfRangeException(nameof(z));
+        ArgumentOutOfRangeException.ThrowIfNegative(x);
+        ArgumentOutOfRangeException.ThrowIfNegative(y);
+        ArgumentOutOfRangeException.ThrowIfNegative(z);
 
         #endregion
 
@@ -84,7 +84,7 @@ public class Number : IEquatable<Number>
     {
         #region Preconditions checks
 
-        if (number == null) throw new ArgumentNullException(nameof(number));
+        ArgumentNullException.ThrowIfNull(number);
 
         #endregion
 
@@ -114,8 +114,8 @@ public class Number : IEquatable<Number>
     {
         #region Preconditions checks
 
-        if (number == null) throw new ArgumentNullException(nameof(number));
-        if (tileSize == null) throw new ArgumentNullException(nameof(tileSize));
+        ArgumentNullException.ThrowIfNull(number);
+        ArgumentNullException.ThrowIfNull(tileSize);
 
         #endregion
 
@@ -150,8 +150,8 @@ public class Number : IEquatable<Number>
     {
         #region Preconditions checks
 
-        if (number == null) throw new ArgumentNullException(nameof(number));
-        if (tileSize == null) throw new ArgumentNullException(nameof(tileSize));
+        ArgumentNullException.ThrowIfNull(number);
+        ArgumentNullException.ThrowIfNull(tileSize);
 
         #endregion
 
@@ -192,7 +192,7 @@ public class Number : IEquatable<Number>
     {
         #region Preconditions checks
 
-        if (number == null) throw new ArgumentNullException(nameof(number));
+        ArgumentNullException.ThrowIfNull(number);
 
         #endregion
 
@@ -243,8 +243,8 @@ public class Number : IEquatable<Number>
     {
         #region Preconditions checks
 
-        if (number == null) throw new ArgumentNullException(nameof(number));
-        if (z < 10) throw new ArgumentOutOfRangeException(nameof(z));
+        ArgumentNullException.ThrowIfNull(number);
+        ArgumentOutOfRangeException.ThrowIfLessThan(z, 10);
 
         #endregion
 
@@ -272,7 +272,7 @@ public class Number : IEquatable<Number>
     {
         #region Preconditions checks
 
-        if (number == null) throw new ArgumentNullException(nameof(number));
+        ArgumentNullException.ThrowIfNull(number);
 
         #endregion
 
@@ -310,8 +310,8 @@ public class Number : IEquatable<Number>
         // Coordinates are checked inside GeoCoordinate.GetNumbers, no need to check it here
         // Size is checked inside GeoCoordinate.GetNumbers
 
-        if (minZ < 0) throw new ArgumentOutOfRangeException(nameof(minZ));
-        if (maxZ < minZ) throw new ArgumentOutOfRangeException(nameof(maxZ));
+        ArgumentOutOfRangeException.ThrowIfNegative(minZ);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxZ, minZ);
 
         #endregion
 
@@ -386,8 +386,8 @@ public class Number : IEquatable<Number>
     {
         #region Preconditions checks
 
-        if (number1 == null) throw new ArgumentNullException(nameof(number1));
-        if (number2 == null) throw new ArgumentNullException(nameof(number2));
+        ArgumentNullException.ThrowIfNull(number1);
+        ArgumentNullException.ThrowIfNull(number2);
 
         string err = string.Format(Strings.Culture, Strings.NotEqual, nameof(number1.Z), nameof(number2.Z));
 
@@ -417,8 +417,8 @@ public class Number : IEquatable<Number>
     {
         #region Preconditions checks
 
-        if (number1 == null) throw new ArgumentNullException(nameof(number1));
-        if (number2 == null) throw new ArgumentNullException(nameof(number2));
+        ArgumentNullException.ThrowIfNull(number1);
+        ArgumentNullException.ThrowIfNull(number2);
 
         string err = string.Format(Strings.Culture, Strings.NotEqual, nameof(number1.Z), nameof(number2.Z));
 
@@ -448,8 +448,8 @@ public class Number : IEquatable<Number>
     {
         #region Preconditions checks
 
-        if (number1 == null) throw new ArgumentNullException(nameof(number1));
-        if (number2 == null) throw new ArgumentNullException(nameof(number2));
+        ArgumentNullException.ThrowIfNull(number1);
+        ArgumentNullException.ThrowIfNull(number2);
 
         string err = string.Format(Strings.Culture, Strings.NotEqual, nameof(number1.Z), nameof(number2.Z));
 
@@ -479,8 +479,8 @@ public class Number : IEquatable<Number>
     {
         #region Preconditions checks
 
-        if (number1 == null) throw new ArgumentNullException(nameof(number1));
-        if (number2 == null) throw new ArgumentNullException(nameof(number2));
+        ArgumentNullException.ThrowIfNull(number1);
+        ArgumentNullException.ThrowIfNull(number2);
 
         string err = string.Format(Strings.Culture, Strings.NotEqual, nameof(number1.Z), nameof(number2.Z));
 

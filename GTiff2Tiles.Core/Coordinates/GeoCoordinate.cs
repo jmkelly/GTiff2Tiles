@@ -29,7 +29,7 @@ public class GeoCoordinate : Coordinate
     {
         #region Preconditions checks
 
-        if (z < 0) throw new ArgumentOutOfRangeException(nameof(z));
+        ArgumentOutOfRangeException.ThrowIfNegative(z);
 
         #endregion
 
@@ -53,8 +53,8 @@ public class GeoCoordinate : Coordinate
     {
         #region Preconditions checks
 
-        if (minCoordinate == null) throw new ArgumentNullException(nameof(minCoordinate));
-        if (maxCoordinate == null) throw new ArgumentNullException(nameof(maxCoordinate));
+        ArgumentNullException.ThrowIfNull(minCoordinate);
+        ArgumentNullException.ThrowIfNull(maxCoordinate);
         // zoom and size are checked on lower levels
 
         #endregion
@@ -119,9 +119,9 @@ public class GeoCoordinate : Coordinate
     {
         #region Preconditions checks
 
-        if (pixelSize <= 0) throw new ArgumentOutOfRangeException(nameof(pixelSize));
-        if (minZ < 0) throw new ArgumentOutOfRangeException(nameof(minZ));
-        if (maxZ < minZ) throw new ArgumentOutOfRangeException(nameof(maxZ));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pixelSize);
+        ArgumentOutOfRangeException.ThrowIfNegative(minZ);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxZ, minZ);
 
         #endregion
 

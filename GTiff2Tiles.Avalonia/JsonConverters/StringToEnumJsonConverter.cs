@@ -24,7 +24,7 @@ public class StringToEnumJsonConverter<T> : JsonConverter<T> where T : Enum
     /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
-        if (writer == null) throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         writer.WriteStringValue(value.ToString().ToLowerInvariant());
     }

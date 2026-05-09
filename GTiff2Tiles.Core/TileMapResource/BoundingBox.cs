@@ -64,8 +64,8 @@ public record BoundingBox
     {
         #region Preconditions checks
 
-        if (minCoordinate is null) throw new ArgumentNullException(nameof(minCoordinate));
-        if (maxCoordinate is null) throw new ArgumentNullException(nameof(maxCoordinate));
+        ArgumentNullException.ThrowIfNull(minCoordinate);
+        ArgumentNullException.ThrowIfNull(maxCoordinate);
 
         #endregion
 

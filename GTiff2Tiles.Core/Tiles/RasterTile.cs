@@ -95,9 +95,9 @@ public class RasterTile : Tile
 
         #region Preconditions checks
 
-        if (tileCache == null) throw new ArgumentNullException(nameof(tileCache));
-        if (readArea == null) throw new ArgumentNullException(nameof(readArea));
-        if (writeArea == null) throw new ArgumentNullException(nameof(writeArea));
+        ArgumentNullException.ThrowIfNull(tileCache);
+        ArgumentNullException.ThrowIfNull(readArea);
+        ArgumentNullException.ThrowIfNull(writeArea);
 
         #endregion
 
@@ -122,6 +122,9 @@ public class RasterTile : Tile
     /// <inheritdoc />
     public override void WriteToFile(IGeoTiff sourceGeoTiff, IWriteTilesArgs args)
     {
+        ArgumentNullException.ThrowIfNull(sourceGeoTiff);
+        ArgumentNullException.ThrowIfNull(args);
+
         // Get postitions and sizes for current tile
         (Area readArea, Area writeArea)? areas = Area.GetAreas(sourceGeoTiff, this);
 
@@ -138,6 +141,9 @@ public class RasterTile : Tile
     /// <inheritdoc />
     public override IEnumerable<byte> WriteToEnumerable(IGeoTiff sourceGeoTiff, IWriteTilesArgs args)
     {
+        ArgumentNullException.ThrowIfNull(sourceGeoTiff);
+        ArgumentNullException.ThrowIfNull(args);
+
         // Get postitions and sizes for current tile
         (Area readArea, Area writeArea)? areas = Area.GetAreas(sourceGeoTiff, this);
 
@@ -155,6 +161,10 @@ public class RasterTile : Tile
     /// <inheritdoc />
     public override bool WriteToChannel<T>(IGeoTiff sourceGeoTiff, ChannelWriter<T> tileWriter, IWriteTilesArgs args)
     {
+        ArgumentNullException.ThrowIfNull(sourceGeoTiff);
+        ArgumentNullException.ThrowIfNull(tileWriter);
+        ArgumentNullException.ThrowIfNull(args);
+
         Bytes = WriteToEnumerable(sourceGeoTiff, args);
 
         return Bytes != null && Validate(false) && tileWriter.TryWrite(this as T);
@@ -188,6 +198,8 @@ public class RasterTile : Tile
     /// <returns>Upper tile <see cref="Image"/></returns>
     public Image WriteOverviewTileImage<T>(T[] fourBaseTiles, bool isBuffered) where T : class, ITile
     {
+        ArgumentNullException.ThrowIfNull(fourBaseTiles);
+
         if (!isBuffered)
         {
             foreach (T tile in fourBaseTiles) tile.Bytes = File.ReadAllBytes(tile.Path);
@@ -202,7 +214,7 @@ public class RasterTile : Tile
             Size size = new(fourBaseTiles[i].Size.Width / 2, fourBaseTiles[i].Size.Height / 2);
             byte[] bytes = fourBaseTiles[i].Bytes?.ToArray();
 
-            if (bytes.Any())
+            if (bytes.Length > 0)
             {
                 empty = false;
                 images[i] = Image.NewFromBuffer(bytes).ThumbnailImage(size.Width, size.Height);

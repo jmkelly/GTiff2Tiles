@@ -63,6 +63,7 @@ public abstract class GeoTiff : IGeoTiff
         try
         {
             Dispose();
+            GC.SuppressFinalize(this);
 
             return default;
         }
@@ -94,7 +95,7 @@ public abstract class GeoTiff : IGeoTiff
     {
         #region Preconditions checks
 
-        if (inputStream == null) throw new ArgumentNullException(nameof(inputStream));
+        ArgumentNullException.ThrowIfNull(inputStream);
 
         string err = string.Format(Strings.Culture, Strings.IsBroken, nameof(inputStream));
 

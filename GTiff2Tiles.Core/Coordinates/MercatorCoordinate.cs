@@ -88,8 +88,8 @@ public class MercatorCoordinate : GeoCoordinate
     {
         #region Preconditions checks
 
-        if (z < 0) throw new ArgumentOutOfRangeException(nameof(z));
-        if (tileSize == null) throw new ArgumentNullException(nameof(tileSize));
+        ArgumentOutOfRangeException.ThrowIfNegative(z);
+        ArgumentNullException.ThrowIfNull(tileSize);
         if (!tileSize.IsSquare) throw new ArgumentException(Strings.NotSqare);
 
         #endregion

@@ -12,10 +12,21 @@ using NetVips;
 namespace GTiff2Tiles.Core;
 // TODO: WIP
 
+/// <summary>
+/// Creates raster tiles from a source <see cref="Raster"/>.
+/// </summary>
 public static class TileGenerator
 {
+    /// <summary>
+    /// Writes generated raster tiles to the output directory.
+    /// </summary>
+    /// <param name="raster">Source raster.</param>
+    /// <param name="args">Tile generation options.</param>
     public static void WriteRasterTilesToDirectory(Raster raster, WriteRasterTilesArgs args)
     {
+        ArgumentNullException.ThrowIfNull(raster);
+        ArgumentNullException.ThrowIfNull(args);
+
         #region Preconditions checks
 
         CheckHelper.CheckDirectory(args.OutputDirectoryPath, true);
@@ -41,7 +52,17 @@ public static class TileGenerator
         // if there's no tiles to crop
         if (tilesCount <= 0) throw new RasterException(Strings.NoTilesToCrop);
 
-        double counter = 0.0;
+        Action<string> timeReporter = args.TimePrinter == null ? null : message => args.TimePrinter(message);
+        TileProgressReporter tileProgressReporter =
+            ProgressHelper.CreateTileProgressReporter(tilesCount, args.Progress, stopwatch, timeReporter);
+        Dictionary<(int Z, int X), string> tileDirectories = CreateTileDirectories(
+            args.OutputDirectoryPath,
+            minCoord: args.MinCoordinate == null ? raster.MinCoordinate : args.MinCoordinate,
+            maxCoord: args.MaxCoordinate == null ? raster.MaxCoordinate : args.MaxCoordinate,
+            minZ: args.MinZ,
+            maxZ: args.MaxZ,
+            tileSize: args.TileSize,
+            tmsCompatible: args.TmsCompatible);
 
         #endregion
 
@@ -75,20 +96,26 @@ public static class TileGenerator
                         Interpolation = args.TileInterpolation
                     };
 
+                    tile.Path = Path.Combine(tileDirectories[(z, x)], $"{y}{tile.GetExtensionString()}");
                     tile.WriteToFile(raster, args);
-
-                    counter++;
-                    double percentage = counter / tilesCount * 100.0;
-                    args.Progress?.Report(percentage);
-
-                    //ProgressHelper.PrintEstimatedTimeLeft(percentage, stopwatch, rasterArgs.TimePrinter);
+                    tileProgressReporter?.Advance();
                 });
             }
         }
     }
 
+    /// <summary>
+    /// Writes generated raster tiles to a channel.
+    /// </summary>
+    /// <param name="raster">Source raster.</param>
+    /// <param name="tileWriter">Channel writer for generated tiles.</param>
+    /// <param name="args">Tile generation options.</param>
     public static void WriteRasterTilesToChannel(Raster raster, ChannelWriter<RasterTile> tileWriter, WriteRasterTilesArgs args)
     {
+        ArgumentNullException.ThrowIfNull(raster);
+        ArgumentNullException.ThrowIfNull(tileWriter);
+        ArgumentNullException.ThrowIfNull(args);
+
         #region Preconditions checks
 
         // channelWriter is checked on lower levels
@@ -104,8 +131,6 @@ public static class TileGenerator
 
         // It's safe to set progress to null
 
-        Stopwatch stopwatch = args.TimePrinter == null ? null : Stopwatch.StartNew();
-
         int tilesCount = Number.GetCount(raster.MinCoordinate, raster.MaxCoordinate,
                                          args.MinZ, args.MaxZ,
                                          args.TmsCompatible, args.TileSize);
@@ -113,7 +138,8 @@ public static class TileGenerator
         // if there's no tiles to crop
         if (tilesCount <= 0) throw new RasterException(Strings.NoTilesToCrop);
 
-        double counter = 0.0;
+        TileProgressReporter tileProgressReporter =
+            ProgressHelper.CreateTileProgressReporter(tilesCount, args.Progress);
 
         #endregion
 
@@ -135,12 +161,7 @@ public static class TileGenerator
             // ReSharper disable once AccessToDisposedClosure
             if (!tile.WriteToChannel(raster, tileWriter, args)) return;
 
-            // Report progress
-            //counter++;
-            //double percentage = counter / tilesCount * 100.0;
-            //progress?.Report(percentage);
-
-            //ProgressHelper.PrintEstimatedTimeLeft(percentage, stopwatch, printTimeAction);
+            tileProgressReporter?.Advance();
         }
 
         // For each zoom
@@ -162,8 +183,17 @@ public static class TileGenerator
         }
     }
 
+    /// <summary>
+    /// Returns generated raster tiles as an enumerable sequence.
+    /// </summary>
+    /// <param name="raster">Source raster.</param>
+    /// <param name="args">Tile generation options.</param>
+    /// <returns>Generated raster tiles.</returns>
     public static IEnumerable<RasterTile> WriteRasterTilesToEnumerable(Raster raster, WriteRasterTilesArgs args)
     {
+        ArgumentNullException.ThrowIfNull(raster);
+        ArgumentNullException.ThrowIfNull(args);
+
         using Image tileCache = raster.Data.Tilecache(args.TileSize.Width,
                                                       args.TileSize.Height,
                                                       args.TileCacheCount, threaded: true);
@@ -202,10 +232,22 @@ public static class TileGenerator
         }
     }
 
+    /// <summary>
+    /// Writes overview tiles for an existing tile set to a channel.
+    /// </summary>
+    /// <param name="baseTiles">Base tiles used to build overview tiles.</param>
+    /// <param name="tileWriter">Channel writer for generated tiles.</param>
+    /// <param name="args">Tile generation options.</param>
     public static void WriteOverviewRasterTilesToChannel(IEnumerable<RasterTile> baseTiles,
                                                          ChannelWriter<RasterTile> tileWriter,
                                                          WriteRasterTilesArgs args)
     {
+        ArgumentNullException.ThrowIfNull(baseTiles);
+        ArgumentNullException.ThrowIfNull(tileWriter);
+        ArgumentNullException.ThrowIfNull(args);
+
+        Dictionary<Number, RasterTile> baseTileLookup = CreateTileLookup(baseTiles);
+
         for (int z = args.MinZ; z <= args.MaxZ; z++)
         {
             (Number minNumber, Number maxNumber) =
@@ -225,7 +267,7 @@ public static class TileGenerator
                         Extension = args.TileExtension, BandsCount = args.BandsCount,
                         Interpolation = args.TileInterpolation
                     };
-                    tile.Bytes = tile.WriteOverviewTileBytes(baseTiles.ToArray());
+                    tile.Bytes = WriteOverviewTileBytes(tile, baseTileLookup);
 
                     tileWriter.TryWrite(tile);
                 });
@@ -233,6 +275,10 @@ public static class TileGenerator
         }
     }
 
+    /// <summary>
+    /// Writes lower-level tiles for the provided tile.
+    /// </summary>
+    /// <param name="tile">Tile to downsample from.</param>
     public static void WriteLowerRasterTiles(RasterTile tile)
     {
         // TODO: in ITIle?
@@ -242,5 +288,62 @@ public static class TileGenerator
     private static bool CheckRasterArgs(WriteRasterTilesArgs args)
     {
         return true;
+    }
+
+    private static Dictionary<(int Z, int X), string> CreateTileDirectories(string outputDirectoryPath,
+        GeoCoordinate minCoord, GeoCoordinate maxCoord, int minZ, int maxZ, Images.Size tileSize,
+        bool tmsCompatible)
+    {
+        Dictionary<(int Z, int X), string> tileDirectories = new();
+
+        for (int zoom = minZ; zoom <= maxZ; zoom++)
+        {
+            (Number minNumber, Number maxNumber) =
+                GeoCoordinate.GetNumbers(minCoord, maxCoord, zoom, tileSize, tmsCompatible);
+
+            string zoomDirectoryPath = Path.Combine(outputDirectoryPath, $"{zoom}");
+            Directory.CreateDirectory(zoomDirectoryPath);
+
+            for (int x = minNumber.X; x <= maxNumber.X; x++)
+            {
+                string tileDirectoryPath = Path.Combine(zoomDirectoryPath, $"{x}");
+                Directory.CreateDirectory(tileDirectoryPath);
+                tileDirectories[(zoom, x)] = tileDirectoryPath;
+            }
+        }
+
+        return tileDirectories;
+    }
+
+    private static Dictionary<Number, RasterTile> CreateTileLookup(IEnumerable<RasterTile> tiles)
+    {
+        Dictionary<Number, RasterTile> tileLookup = new();
+
+        foreach (RasterTile tile in tiles)
+        {
+            if (tile?.Number == null) continue;
+
+            tileLookup[tile.Number] = tile;
+        }
+
+        return tileLookup;
+    }
+
+    private static IEnumerable<byte> WriteOverviewTileBytes(RasterTile targetTile,
+                                                            Dictionary<Number, RasterTile> baseTileLookup)
+    {
+        Number[] numbers = targetTile.Number.GetLowerNumbers();
+        RasterTile[] lowerTiles = new RasterTile[4];
+
+        for (int i = 0; i < numbers.Length; i++)
+        {
+            baseTileLookup.TryGetValue(numbers[i], out lowerTiles[i]);
+        }
+
+        return lowerTiles.All(tile => tile == null)
+            ? null
+            : Raster.JoinTilesIntoBytes(lowerTiles[0], lowerTiles[1], lowerTiles[2], lowerTiles[3],
+                                        lowerTiles.All(tile => tile?.Bytes != null), targetTile.Size,
+                                        targetTile.BandsCount, targetTile.Extension);
     }
 }

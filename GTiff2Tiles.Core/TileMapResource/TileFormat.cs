@@ -72,7 +72,7 @@ public record TileFormat
     {
         #region Preconditions checks
 
-        if (size is null) throw new ArgumentNullException(nameof(size));
+        ArgumentNullException.ThrowIfNull(size);
 
         #endregion
 
