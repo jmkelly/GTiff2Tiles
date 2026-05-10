@@ -31,6 +31,29 @@ Outdated docs for release 1.4.x Core's API are available on [GitHub Wiki](https:
 
 In [Examples](https://github.com/Gigas002/GTiff2Tiles/tree/master/Examples) directory you can find **GeoTIFFs** for some tests
 
+## Image server
+
+This repository also contains `GTiff2Tiles.Server`, a pragmatic ASP.NET Core image server for local development.
+
+> [!WARNING]
+> The admin UI is intended for trusted local use only. It has no authentication/authorization, so do not expose it directly to untrusted users or networks.
+
+It provides:
+- a Razor Pages + HTMX admin UI for creating catalogs
+- GeoTIFF upload and normalization to Web Mercator (`EPSG:3857`)
+- one active GeoTIFF per catalog in v1
+- on-demand XYZ tile rendering at routes like `/{catalogSlug}/{z}/{x}/{y}`
+- SQLite metadata storage plus disk-backed raster/tile storage under `App_Data` by default
+- configurable large-upload request limits for GeoTIFF workflows (10 GiB by default)
+
+Run it with:
+
+```bash
+dotnet run --project GTiff2Tiles.Server
+```
+
+Then open the printed local URL, create a catalog, upload a GeoTIFF, and request tiles from the catalog slug route.
+
 ## Console viewer option
 
 The CLI can also generate a simple slippy-map QA page in the tile output root:

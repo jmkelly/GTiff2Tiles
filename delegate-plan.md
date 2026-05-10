@@ -1,0 +1,2 @@
+- Review the existing tile-generation flow in `GTiff2Tiles.Core/` and the current expectations in `GTiff2Tiles.Tests/` to pinpoint the files and behavior relevant to the requested change.
+- Define the smallest set of code, test, and documentation updates needed, then validate the result with focused project tests before finalizing.
