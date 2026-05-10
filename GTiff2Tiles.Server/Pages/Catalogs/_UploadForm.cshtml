@@ -1,0 +1,17 @@
+@model GTiff2Tiles.Server.Models.UploadGeoTiffInput
+
+<form method="post"
+      enctype="multipart/form-data"
+      hx-post="@Url.Page("/Catalogs/Details", "Upload", new { id = ViewContext.RouteData.Values["id"] })"
+      hx-target="#upload-form"
+      hx-swap="innerHTML">
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    <label asp-for="Files">GeoTIFF files</label>
+    <input asp-for="Files" type="file" accept=".tif,.tiff,image/tiff" multiple />
+    <span asp-validation-for="Files" class="validation-message"></span>
+
+    <p class="muted">Uploads are normalized to EPSG:3857/Byte when needed. You can upload multiple GeoTIFFs at once, and the newest uploaded image becomes active for the catalog.</p>
+
+    <button type="submit">Upload GeoTIFFs</button>
+</form>

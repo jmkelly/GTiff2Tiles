@@ -1,0 +1,67 @@
+@page "{id:int}"
+@model GTiff2Tiles.Server.Pages.Catalogs.DetailsModel
+@{
+    ViewData["Title"] = Model.Catalog.Name;
+}
+
+<div class="page-grid details-grid">
+    <section class="card">
+        <div class="section-heading">
+            <div>
+                <a asp-page="/Index">← Back to catalogs</a>
+                <h1>Manage catalog</h1>
+                <p class="muted">Update catalog details, upload imagery, then return to the admin index when you're done.</p>
+            </div>
+
+            <div class="page-actions">
+                @if (Model.Catalog.ActiveImage is not null)
+                {
+                    <a class="button-link secondary" asp-page="/Catalogs/Map" asp-route-id="@Model.Id">View map</a>
+                }
+                <a class="button-link" asp-page="/Index">Done</a>
+            </div>
+        </div>
+
+        <form method="post" asp-page-handler="Update" class="stacked-section">
+            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+            <label asp-for="UpdateCatalog.Name">Name</label>
+            <input asp-for="UpdateCatalog.Name" />
+            <span asp-validation-for="UpdateCatalog.Name" class="validation-message"></span>
+
+            <label asp-for="UpdateCatalog.Slug">Slug</label>
+            <input asp-for="UpdateCatalog.Slug" />
+            <span class="muted">Tile route updates as the slug changes.</span>
+            <span asp-validation-for="UpdateCatalog.Slug" class="validation-message"></span>
+
+            <label asp-for="UpdateCatalog.Description">Description</label>
+            <textarea asp-for="UpdateCatalog.Description" rows="3"></textarea>
+            <span asp-validation-for="UpdateCatalog.Description" class="validation-message"></span>
+
+            <button type="submit">Save catalog details</button>
+        </form>
+
+        <div class="route-preview stacked-section">
+            <strong>XYZ route</strong>
+            <code>/@Model.Catalog.Slug/{z}/{x}/{y}</code>
+        </div>
+
+        <div id="upload-form"
+             hx-get="@Url.Page("/Catalogs/Details", "UploadForm", new { id = Model.Id })"
+             hx-trigger="load, image-updated from:body"
+             hx-swap="innerHTML">
+        </div>
+    </section>
+
+    <section class="card">
+        <div id="image-panel"
+             hx-get="@Url.Page("/Catalogs/Details", "ImagePanel", new { id = Model.Id })"
+             hx-trigger="load, image-updated from:body"
+             hx-swap="innerHTML">
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

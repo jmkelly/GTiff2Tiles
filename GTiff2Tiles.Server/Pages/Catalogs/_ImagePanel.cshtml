@@ -1,0 +1,61 @@
+@model GTiff2Tiles.Server.Models.Catalog
+
+<div class="section-heading">
+    <h2>Catalog imagery</h2>
+    <span class="muted">One active GeoTIFF is served per catalog.</span>
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+}
+
+@if (Model.ActiveImage is null)
+{
+    <p class="muted">No active image yet. Upload a GeoTIFF to start serving tiles.</p>
+}
+else
+{
+    <article class="active-image">
+        <h3>Active image</h3>
+        <p><strong>@Model.ActiveImage.OriginalFileName</strong></p>
+        <p class="muted">Uploaded @Model.ActiveImage.UploadedUtc.UtcDateTime.ToString("u")</p>
+        <p class="muted">Normalized size: @Model.ActiveImage.Width × @Model.ActiveImage.Height</p>
+        <p class="muted">Bounds: [@Model.ActiveImage.MinX, @Model.ActiveImage.MinY] → [@Model.ActiveImage.MaxX, @Model.ActiveImage.MaxY]</p>
+    </article>
+}
+
+<h3>Uploads</h3>
+@if (Model.Images.Count == 0)
+{
+    <p class="muted">No uploads for this catalog yet.</p>
+}
+else
+{
+    <div class="image-list">
+        @foreach (var image in Model.Images.OrderByDescending(image => image.UploadedUtc))
+        {
+            bool isActive = Model.ActiveImageId == image.Id;
+            <article class="catalog-item">
+                <div>
+                    <p><strong>@image.OriginalFileName</strong></p>
+                    <p class="muted">Uploaded @image.UploadedUtc.UtcDateTime.ToString("u")</p>
+                    <p class="muted">@image.Width × @image.Height • @string.Format("{0:N0}", image.OriginalFileSizeBytes) bytes</p>
+                </div>
+                @if (isActive)
+                {
+                    <span class="badge">Active</span>
+                }
+                else
+                {
+                    <form method="post"
+                          hx-post="@Url.Page("/Catalogs/Details", "SetActive", new { id = Model.Id, imageId = image.Id })"
+                          hx-target="#image-panel"
+                          hx-swap="innerHTML">
+                        <button type="submit">Set active</button>
+                    </form>
+                }
+            </article>
+        }
+    </div>
+}

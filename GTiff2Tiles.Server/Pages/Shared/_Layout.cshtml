@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - GTiff2Tiles Server</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/GTiff2Tiles.Server.styles.css" asp-append-version="true" />
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+    <header class="site-header">
+        <div class="shell header-shell">
+            <a class="site-title" asp-page="/Index">GTiff2Tiles Server</a>
+            <span class="muted">Local-dev image catalog and on-demand XYZ tiling</span>
+        </div>
+    </header>
+
+    <main class="shell main-shell">
+        @RenderBody()
+    </main>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

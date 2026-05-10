@@ -1,0 +1,78 @@
+@page "{id:int}/Map"
+@using System.Text.Json
+@model GTiff2Tiles.Server.Pages.Catalogs.MapModel
+@{
+    ViewData["Title"] = $"{Model.Catalog.Name} Map";
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+
+<div class="page-grid">
+    <section class="card map-shell">
+        <div class="section-heading">
+            <div>
+                <a asp-page="/Catalogs/Details" asp-route-id="@Model.Id">← Back to catalog</a>
+                <h1>@Model.Catalog.Name map</h1>
+                <p class="muted">Slug: <code>@Model.Catalog.Slug</code></p>
+            </div>
+
+            <div class="page-actions">
+                <a class="button-link" asp-page="/Catalogs/Details" asp-route-id="@Model.Id">Manage catalog</a>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Catalog.Description))
+        {
+            <p>@Model.Catalog.Description</p>
+        }
+
+        <div class="route-preview map-meta">
+            <p><strong>XYZ route</strong></p>
+            <code>@Model.TileRouteTemplate</code>
+            @if (Model.HasActiveImage)
+            {
+                <p class="muted">Rendering the active raster on demand on top of OpenStreetMap.</p>
+            }
+        </div>
+
+        @if (!Model.HasActiveImage)
+        {
+            <div class="route-preview map-empty-state">
+                <h2>No active image yet</h2>
+                <p class="muted">Upload a GeoTIFF or set an existing upload as active before opening the map viewer.</p>
+                <a class="button-link" asp-page="/Catalogs/Details" asp-route-id="@Model.Id">Go to catalog details</a>
+            </div>
+        }
+        else
+        {
+            <div class="map-toolbar">
+                <label for="overlay-opacity">Overlay opacity</label>
+                <input id="overlay-opacity" type="range" min="0" max="1" step="0.05" value="0.75" />
+            </div>
+
+            <div id="catalog-map"
+                 class="map-container"
+                 data-catalog-name="@Model.Catalog.Name"
+                 data-tile-url="@Model.TileRouteTemplate"
+                 data-bounds='@JsonSerializer.Serialize(new[]
+                              {
+                                  new[] { Model.South!.Value, Model.West!.Value },
+                                  new[] { Model.North!.Value, Model.East!.Value }
+                              })'>
+            </div>
+
+            <div class="map-meta muted">
+                <p><strong>Active image:</strong> @Model.Catalog.ActiveImage!.OriginalFileName</p>
+                <p><strong>Normalized raster size:</strong> @Model.Catalog.ActiveImage.Width × @Model.Catalog.ActiveImage.Height</p>
+            </div>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    @if (Model.HasActiveImage)
+    {
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+        <script src="~/js/catalog-map.js" asp-append-version="true"></script>
+    }
+}

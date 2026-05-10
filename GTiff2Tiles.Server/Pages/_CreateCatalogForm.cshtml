@@ -1,0 +1,20 @@
+@model GTiff2Tiles.Server.Models.CreateCatalogInput
+
+<form method="post" asp-page="/Catalogs/Create">
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    <label asp-for="Name">Name</label>
+    <input asp-for="Name" />
+    <span asp-validation-for="Name" class="validation-message"></span>
+
+    <label asp-for="Slug">Slug</label>
+    <input asp-for="Slug" />
+    <span class="muted">Optional. Leave blank to generate one.</span>
+    <span asp-validation-for="Slug" class="validation-message"></span>
+
+    <label asp-for="Description">Description</label>
+    <textarea asp-for="Description" rows="3"></textarea>
+    <span asp-validation-for="Description" class="validation-message"></span>
+
+    <button type="submit">Create catalog</button>
+</form>
