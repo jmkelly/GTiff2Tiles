@@ -90,7 +90,7 @@ public sealed class AreaTests
         PixelCoordinate expectedReadCoord = new(0.0, 0.0);
         PixelCoordinate expectedWriteCoord = new(5.6875, 249.1875);
         Size expectedReadSize = new(4473, 218);
-        Size expectedWriteSize = new(140, 7);
+        Size expectedWriteSize = new(141, 7);
 
         Area calcReadArea = null;
         Area calcWriteArea = null;
@@ -267,7 +267,7 @@ public sealed class AreaTests
         PixelCoordinate expectedReadCoord = new(0.0, 218.0);
         PixelCoordinate expectedWriteCoord = new(5.6875, 0.0);
         Size expectedReadSize = new(4473, 3293);
-        Size expectedWriteSize = new(140, 102);
+        Size expectedWriteSize = new(141, 103);
 
         Area calcReadArea = null;
         Area calcWriteArea = null;

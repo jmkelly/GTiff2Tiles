@@ -21,22 +21,22 @@ public readonly record struct RasterTileLayout(
     /// <summary>
     /// Integer crop left edge.
     /// </summary>
-    public int ReadLeft => (int)ReadX;
+    public int ReadLeft => (int)Math.Floor(ReadX);
 
     /// <summary>
     /// Integer crop top edge.
     /// </summary>
-    public int ReadTop => (int)ReadY;
+    public int ReadTop => (int)Math.Floor(ReadY);
 
     /// <summary>
     /// Integer write left edge.
     /// </summary>
-    public int WriteLeft => (int)WriteX;
+    public int WriteLeft => (int)Math.Floor(WriteX);
 
     /// <summary>
     /// Integer write top edge.
     /// </summary>
-    public int WriteTop => (int)WriteY;
+    public int WriteTop => (int)Math.Floor(WriteY);
 
     /// <summary>
     /// Horizontal resize factor.
@@ -61,8 +61,8 @@ public readonly record struct RasterTileLayout(
         ArgumentNullException.ThrowIfNull(tileSize);
 
         return
-            WriteX == 0.0 &&
-            WriteY == 0.0 &&
+            WriteLeft == 0 &&
+            WriteTop == 0 &&
             WriteWidth == tileSize.Width &&
             WriteHeight == tileSize.Height;
     }
@@ -148,22 +148,20 @@ public static class RasterTileLayoutCalculator
         double writePosMaxY = tileSize.Height * (tileMaxCoordinate.Y - tilePixMinY) /
                               (tileMaxCoordinate.Y - tileMinCoordinate.Y);
 
-        double readWidth = readPosMaxX - readPosMinX;
-        double writeWidth = writePosMaxX - writePosMinX;
-        double readHeight = Math.Abs(readPosMaxY - readPosMinY);
-        double writeHeight = Math.Abs(writePosMaxY - writePosMinY);
+        int readLeft = (int)Math.Floor(readPosMinX);
+        int readTop = (int)Math.Floor(readPosMinY);
+        int readRight = (int)Math.Ceiling(readPosMaxX);
+        int readBottom = (int)Math.Ceiling(readPosMaxY);
 
-        double readXShift = readPosMinX - (int)readPosMinX;
-        readWidth += readXShift;
-        double readYShift = readPosMinY - (int)readPosMinY;
-        readHeight += readYShift;
-        double writeXShift = writePosMinX - (int)writePosMinX;
-        writeWidth += writeXShift;
-        double writeYShift = writePosMinY - (int)writePosMinY;
-        writeHeight += writeYShift;
+        int writeLeft = (int)Math.Floor(writePosMinX);
+        int writeTop = (int)Math.Floor(writePosMinY);
+        int writeRight = (int)Math.Ceiling(writePosMaxX);
+        int writeBottom = (int)Math.Ceiling(writePosMaxY);
 
-        writeWidth = writeWidth > 1.0 ? writeWidth : 1.0;
-        writeHeight = writeHeight > 1.0 ? writeHeight : 1.0;
+        int readWidth = readRight - readLeft;
+        int readHeight = readBottom - readTop;
+        int writeWidth = writeRight - writeLeft;
+        int writeHeight = writeBottom - writeTop;
 
         if (readWidth < 1 || readHeight < 1 || writeWidth < 1 || writeHeight < 1)
         {
@@ -174,12 +172,12 @@ public static class RasterTileLayoutCalculator
         layout = new RasterTileLayout(
             readPosMinX,
             readPosMinY,
-            (int)readWidth,
-            (int)readHeight,
+            readWidth,
+            readHeight,
             writePosMinX,
             writePosMinY,
-            (int)writeWidth,
-            (int)writeHeight);
+            writeWidth,
+            writeHeight);
 
         return true;
     }
