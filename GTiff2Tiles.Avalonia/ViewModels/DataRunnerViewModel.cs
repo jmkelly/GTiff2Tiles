@@ -268,75 +268,7 @@ public class DataRunnerViewModel : ViewModelBase, IDisposable
         ProgressPresenter.CurrentStageValue = message;
     }
 
-    #region GUI testing actions
-
-    /// <summary>
-    /// Simulate work in loop
-    /// </summary>
-    private Task TestAction(double iterationCount) => Task.Run(async () =>
-    {
-        for (int i = 0; i <= iterationCount; i++)
-        {
-            CancellationToken.ThrowIfCancellationRequested();
-
-            double percentage = i / iterationCount * 100.0;
-            await Task.Delay(1).ConfigureAwait(true);
-            Progress.Report(percentage);
-        }
-    });
-
-    /// <summary>
-    /// Just freezes the interface, running progress bar, showing message box,
-    /// cancelling task
-    /// </summary>
-    public async ValueTask TestAction()
-    {
-        // Freeze settings for current run
-        var runSettings = Settings.Clone();
-
-        PreExecutionTask("Task in process");
-
-        // Simulate work
-        const double iterationCount = 10000.0;
-
-        try
-        {
-            await TestAction(iterationCount).ConfigureAwait(true);
-        }
-        catch (Exception exception)
-        {
-            PostExecutionTask(OperationCancelledOrErrorOccuredMessage);
-
-            await MessageBoxViewModel.ShowAsync(exception).ConfigureAwait(true);
-
-            return;
-        }
-
-        PostExecutionTask("Task complete");
-
-        await MessageBoxViewModel.ShowAsync("Task complete", false).ConfigureAwait(true);
-    }
-
-    #endregion
-
-    public Task StartButton() => TestAction().AsTask();
-
-    public async Task CancelButton()
-    {
-        var dialRes = await MessageBoxViewModel.ShowAsync("Cancel task execution?").ConfigureAwait(true);
-
-        if (dialRes == DialogResult.Ok)
-        {
-            await CancellationTokenSource.CancelAsync().ConfigureAwait(true);
-            ProgressPresenter.StopTimer();
-        }
-    }
-
-    
-    
-    // Copy-paste from GTiff2Tiles.GUI
-     
-    public async ValueTask StartButton2()
+    public async Task StartButton()
     {
         // Freeze settings for current run
         var runSettings = Settings.Clone();
@@ -361,6 +293,17 @@ public class DataRunnerViewModel : ViewModelBase, IDisposable
         await MessageBoxViewModel.ShowAsync("Task is done", false).ConfigureAwait(true);
     }
 
+    public async Task CancelButton()
+    {
+        var dialRes = await MessageBoxViewModel.ShowAsync("Cancel task execution?").ConfigureAwait(true);
+
+        if (dialRes == DialogResult.Ok)
+        {
+            await CancellationTokenSource.CancelAsync().ConfigureAwait(true);
+            ProgressPresenter.StopTimer();
+        }
+    }
+
     public Task GenerateTiles(SettingsModel runSettings) => Task.Run(async () =>
     {
             ValidateData(runSettings);
@@ -369,8 +312,8 @@ public class DataRunnerViewModel : ViewModelBase, IDisposable
             string tempDirectoryPath = Path.Combine(runSettings.TempPath, DateTime.Now.ToString(DateTimePatterns.LongWithMs, CultureInfo.InvariantCulture));
             CheckHelper.CheckDirectory(tempDirectoryPath, true);
 
-            // Because we need to check input file it's better to use temprorary value
-            string inputFilePath = InputDataSelectorText;
+            // Because we need to check input file it's better to use temporary value
+            string inputFilePath = InputDataSelector.SelectorPath;
 
             if (!await CheckHelper.CheckInputFileAsync(inputFilePath, runSettings.CoordinateSystem).ConfigureAwait(true))
             {
@@ -387,7 +330,7 @@ public class DataRunnerViewModel : ViewModelBase, IDisposable
             var tileSize = new Core.Images.Size(runSettings.RasterTileSize, runSettings.RasterTileSize);
 
             // Generate tiles
-            await image.WriteTilesToDirectoryAsync(OutputDataSelectorText, MinZoom, MaxZoom,
+            await image.WriteTilesToDirectoryAsync(OutputDataSelector.SelectorPath, MinZoom, MaxZoom,
                 runSettings.TmsCompatible, tileSize, runSettings.RasterTileExtension,
                 runSettings.RasterTileInterpolation, runSettings.BandsCount, runSettings.TileCacheCount,
                 runSettings.ThreadsCount, Progress).ConfigureAwait(true);
@@ -400,7 +343,7 @@ public class DataRunnerViewModel : ViewModelBase, IDisposable
                 TileMap tileMap = new(image.MinCoordinate, image.MaxCoordinate, tileSize,
                     runSettings.RasterTileExtension, tileSets, runSettings.CoordinateSystem);
 
-                string xmlPath = $"{OutputDataSelectorText}/tilemapresource.xml";
+                string xmlPath = Path.Combine(OutputDataSelector.SelectorPath, "tilemapresource.xml");
                 using FileStream fs = File.OpenWrite(xmlPath);
                 tileMap.Serialize(fs);
             }
@@ -410,8 +353,8 @@ public class DataRunnerViewModel : ViewModelBase, IDisposable
     private void ValidateData(SettingsModel settings)
     {
         // Check paths
-        CheckHelper.CheckFile(InputDataSelectorText, true, FileExtensions.Tif);
-        CheckHelper.CheckDirectory(OutputDataSelectorText);
+        CheckHelper.CheckFile(InputDataSelector.SelectorPath, true, FileExtensions.Tif);
+        CheckHelper.CheckDirectory(OutputDataSelector.SelectorPath);
         CheckHelper.CheckDirectory(settings.TempPath);
 
         // Required params
