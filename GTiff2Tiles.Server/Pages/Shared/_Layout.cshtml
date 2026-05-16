@@ -1,3 +1,8 @@
+@using GTiff2Tiles.Server.Models
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,6 +18,21 @@
         <div class="shell header-shell">
             <a class="site-title" asp-page="/Index">GTiff2Tiles Server</a>
             <span class="muted">Local-dev image catalog and on-demand XYZ tiling</span>
+            <nav class="auth-nav">
+                @if (SignInManager.IsSignedIn(User))
+                {
+                    <span class="account-email muted">@User.Identity!.Name</span>
+                    <a class="button-link secondary" asp-area="Identity" asp-page="/Account/Manage/Index">Account</a>
+                    <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/")" method="post" class="inline-form">
+                        <button type="submit" class="button-link secondary">Log out</button>
+                    </form>
+                }
+                else
+                {
+                    <a class="button-link secondary" asp-area="Identity" asp-page="/Account/Register">Register</a>
+                    <a class="button-link secondary" asp-area="Identity" asp-page="/Account/Login">Log in</a>
+                }
+            </nav>
         </div>
     </header>
 

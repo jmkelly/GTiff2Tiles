@@ -115,6 +115,20 @@ form {
   font-weight: 700;
 }
 
+.auth-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.auth-nav .inline-form {
+  margin: 0;
+}
+
+.auth-nav .account-email {
+  font-size: 0.85rem;
+}
+
 .main-shell {
   padding: 1.5rem 0 2.5rem;
 }
@@ -272,6 +286,12 @@ form {
 .validation-summary ul {
   padding-left: 1.2rem;
 }
+
+.htmx-indicator { display: none; }
+.htmx-request .htmx-indicator { display: inline-flex; }
+.htmx-request.htmx-indicator { display: inline-flex; }
+.htmx-settling { display: inline; }
+.htmx-request .htmx-settling { display: none; }
 
 @media (max-width: 720px) {
   .header-shell,
