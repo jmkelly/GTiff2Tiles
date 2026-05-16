@@ -167,14 +167,18 @@ public class Raster : GeoTiff
         Image tileImage = tileCache.Crop(layout.ReadLeft, layout.ReadTop, layout.ReadWidth, layout.ReadHeight);
 
         if (!layout.HasSameReadAndWriteSize)
-            tileImage = tileImage.Resize(layout.XScale, tile.Interpolation, null, layout.YScale);
+        {
+            using Image originalTileImage = tileImage;
+            tileImage = originalTileImage.Resize(layout.XScale, tile.Interpolation, null, layout.YScale);
+        }
 
         Band.AddDefaultBands(ref tileImage, tile.BandsCount);
 
         if (layout.WritesWholeTile(tile.Size))
             return tileImage;
 
-        return tileImage.Embed(
+        using Image embeddedSourceImage = tileImage;
+        return embeddedSourceImage.Embed(
             layout.WriteLeft,
             layout.WriteTop,
             tile.Size.Width,
@@ -677,23 +681,32 @@ public class Raster : GeoTiff
 
         Image[] images = new Image[4];
 
-        Size size = new(tileSize.Width / 2, tileSize.Height / 2);
-        bool empty = true;
-
-        for (int i = 0; i < 4; i++)
+        try
         {
-            if (bytes[i].Length > 0)
-            {
-                empty = false;
-                images[i] = Image.NewFromBuffer(bytes[i]).ThumbnailImage(size.Width, size.Height);
-            }
-            else
-            {
-                images[i] = Image.Black(size.Width, size.Height, bandsCount);
-            }
-        }
+            Size size = new(tileSize.Width / 2, tileSize.Height / 2);
+            bool empty = true;
 
-        return empty ? null : Image.Arrayjoin(images, 2);
+            for (int i = 0; i < 4; i++)
+            {
+                if (bytes[i].Length > 0)
+                {
+                    empty = false;
+                    using Image sourceImage = Image.NewFromBuffer(bytes[i]);
+                    images[i] = sourceImage.ThumbnailImage(size.Width, size.Height);
+                }
+                else
+                {
+                    images[i] = Image.Black(size.Width, size.Height, bandsCount);
+                }
+            }
+
+            return empty ? null : Image.Arrayjoin(images, 2);
+        }
+        finally
+        {
+            foreach (Image image in images)
+                image?.Dispose();
+        }
     }
 
     /// <inheritdoc cref="JoinTilesIntoImage(IEnumerable{byte},IEnumerable{byte},IEnumerable{byte},IEnumerable{byte},Size,int)"/>
@@ -722,24 +735,33 @@ public class Raster : GeoTiff
 
         Image[] images = new Image[4];
 
-        Size size = new(tileSize.Width / 2, tileSize.Height / 2);
-        bool empty = true;
-
-        for (int i = 0; i < 4; i++)
+        try
         {
-            if (File.Exists(paths[i]))
-            {
-                empty = false;
-                byte[] bytes = File.ReadAllBytes(paths[i]);
-                images[i] = Image.NewFromBuffer(bytes).ThumbnailImage(size.Width, size.Height);
-            }
-            else
-            {
-                images[i] = Image.Black(size.Width, size.Height, bandsCount);
-            }
-        }
+            Size size = new(tileSize.Width / 2, tileSize.Height / 2);
+            bool empty = true;
 
-        return empty ? null : Image.Arrayjoin(images, 2);
+            for (int i = 0; i < 4; i++)
+            {
+                if (File.Exists(paths[i]))
+                {
+                    empty = false;
+                    byte[] bytes = File.ReadAllBytes(paths[i]);
+                    using Image sourceImage = Image.NewFromBuffer(bytes);
+                    images[i] = sourceImage.ThumbnailImage(size.Width, size.Height);
+                }
+                else
+                {
+                    images[i] = Image.Black(size.Width, size.Height, bandsCount);
+                }
+            }
+
+            return empty ? null : Image.Arrayjoin(images, 2);
+        }
+        finally
+        {
+            foreach (Image image in images)
+                image?.Dispose();
+        }
     }
 
     /// <inheritdoc cref="JoinTilesIntoImage(string,string,string,string,Size,int)"/>

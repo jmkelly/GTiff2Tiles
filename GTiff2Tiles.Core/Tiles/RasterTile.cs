@@ -108,15 +108,18 @@ public class RasterTile : Tile
 
         // Crop and resize tile
         Image tempTileImage = tileCache.Crop((int)readArea.OriginCoordinate.X, (int)readArea.OriginCoordinate.Y,
-                                             readArea.Size.Width, readArea.Size.Height)
-                                       .Resize(xScale, Interpolation, yScale);
+                                             readArea.Size.Width, readArea.Size.Height);
+        using (Image originalTileImage = tempTileImage)
+            tempTileImage = originalTileImage.Resize(xScale, Interpolation, yScale);
 
         // Add alpha channel if needed
         Band.AddDefaultBands(ref tempTileImage, BandsCount);
 
         // Make transparent image and insert tile
-        return Image.Black(Size.Width, Size.Height).NewFromImage(new int[BandsCount])
-                    .Insert(tempTileImage, (int)writeArea.OriginCoordinate.X, (int)writeArea.OriginCoordinate.Y);
+        using Image background = Image.Black(Size.Width, Size.Height);
+        using Image canvas = background.NewFromImage(new int[BandsCount]);
+        using (Image tileImage = tempTileImage)
+            return canvas.Insert(tileImage, (int)writeArea.OriginCoordinate.X, (int)writeArea.OriginCoordinate.Y);
     }
 
     /// <inheritdoc />
@@ -181,12 +184,8 @@ public class RasterTile : Tile
         lowerTiles[3] = allBaseTiles.FirstOrDefault(t => t.Number == numbers[3]);
         bool isBuffered = lowerTiles[0].Bytes != null;
 
-        Image image = WriteOverviewTileImage(lowerTiles, isBuffered);
-
-        byte[] result = image?.WriteToBuffer(GetExtensionString(Extension));
-        image?.Dispose();
-
-        return result;
+        using Image image = WriteOverviewTileImage(lowerTiles, isBuffered);
+        return image?.WriteToBuffer(GetExtensionString(Extension));
     }
 
     /// <summary>
@@ -207,22 +206,31 @@ public class RasterTile : Tile
 
         Image[] images = new Image[4];
 
-        bool empty = true;
-
-        for (int i = 0; i < 4; i++)
+        try
         {
-            Size size = new(fourBaseTiles[i].Size.Width / 2, fourBaseTiles[i].Size.Height / 2);
-            byte[] bytes = fourBaseTiles[i].Bytes?.ToArray();
+            bool empty = true;
 
-            if (bytes.Length > 0)
+            for (int i = 0; i < 4; i++)
             {
-                empty = false;
-                images[i] = Image.NewFromBuffer(bytes).ThumbnailImage(size.Width, size.Height);
-            }
-            else { images[i] = Image.Black(size.Width, size.Height, BandsCount); }
-        }
+                Size size = new(fourBaseTiles[i].Size.Width / 2, fourBaseTiles[i].Size.Height / 2);
+                byte[] bytes = fourBaseTiles[i].Bytes?.ToArray();
 
-        return empty ? null : Image.Arrayjoin(images, 2);
+                if (bytes.Length > 0)
+                {
+                    empty = false;
+                    using Image sourceImage = Image.NewFromBuffer(bytes);
+                    images[i] = sourceImage.ThumbnailImage(size.Width, size.Height);
+                }
+                else { images[i] = Image.Black(size.Width, size.Height, BandsCount); }
+            }
+
+            return empty ? null : Image.Arrayjoin(images, 2);
+        }
+        finally
+        {
+            foreach (Image image in images)
+                image?.Dispose();
+        }
     }
 
     #endregion

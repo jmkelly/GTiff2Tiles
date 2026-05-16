@@ -41,7 +41,10 @@ public sealed class Band
         ArgumentNullException.ThrowIfNull(bands);
 
         foreach (Band band in bands)
+        {
+            using Image original = image;
             image = image.Bandjoin(band.Value);
+        }
     }
 
     /// <summary>
@@ -58,10 +61,12 @@ public sealed class Band
 
         if (missingBandsCount == 1 && (image.Bands == 1 || image.Bands == 3))
         {
+            using Image original = image;
             image = image.AddAlpha();
             return;
         }
 
+        using Image source = image;
         image = image.BandjoinConst(GetDefaultBandValues(missingBandsCount));
     }
 
