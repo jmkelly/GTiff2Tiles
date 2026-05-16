@@ -13,9 +13,16 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
     {
         return await dbContext.Catalogs
                               .AsNoTracking()
-                              .Include(catalog => catalog.ActiveImage)
-                              .Include(catalog => catalog.Images)
                               .OrderBy(catalog => catalog.Name)
+                              .Select(catalog => new Catalog
+                              {
+                                  Id = catalog.Id,
+                                  Name = catalog.Name,
+                                  Slug = catalog.Slug,
+                                  Description = catalog.Description,
+                                  CreatedUtc = catalog.CreatedUtc,
+                                  ImageCount = catalog.Images.Count
+                              })
                               .ToListAsync(cancellationToken)
                               .ConfigureAwait(false);
     }
@@ -23,7 +30,6 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
     public async Task<Catalog?> GetCatalogAsync(int id, CancellationToken cancellationToken)
     {
         return await dbContext.Catalogs
-                              .Include(catalog => catalog.ActiveImage)
                               .Include(catalog => catalog.Images)
                               .FirstOrDefaultAsync(catalog => catalog.Id == id, cancellationToken)
                               .ConfigureAwait(false);
@@ -56,7 +62,6 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
         ArgumentNullException.ThrowIfNull(input);
 
         Catalog catalog = await dbContext.Catalogs
-                                         .Include(existingCatalog => existingCatalog.ActiveImage)
                                          .Include(existingCatalog => existingCatalog.Images)
                                          .FirstOrDefaultAsync(existingCatalog => existingCatalog.Id == catalogId, cancellationToken)
                                          .ConfigureAwait(false)
@@ -93,36 +98,75 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
             ValidateGeoTiffFile(file);
         }
 
+        int nextSortOrder = catalog.Images.Count == 0 ? 0 : catalog.Images.Max(image => image.SortOrder) + 1;
         List<CatalogImage> uploadedImages = [];
         foreach (IFormFile file in input.Files)
         {
-            CatalogImage image = await UploadSingleImageAsync(catalog, file, cancellationToken).ConfigureAwait(false);
+            CatalogImage image = await UploadSingleImageAsync(catalog, file, nextSortOrder, cancellationToken).ConfigureAwait(false);
             uploadedImages.Add(image);
+            nextSortOrder++;
         }
 
         return uploadedImages;
     }
 
-    public async Task<Catalog> SetActiveImageAsync(int catalogId, int imageId, CancellationToken cancellationToken)
+    public async Task<Catalog> MoveImageAsync(int catalogId, int imageId, int offset, CancellationToken cancellationToken)
     {
+        if (offset is not -1 and not 1)
+            throw new InvalidOperationException("Only adjacent image reordering is supported.");
+
         Catalog catalog = await dbContext.Catalogs
                                          .Include(existingCatalog => existingCatalog.Images)
                                          .FirstOrDefaultAsync(existingCatalog => existingCatalog.Id == catalogId, cancellationToken)
                                          .ConfigureAwait(false)
                           ?? throw new InvalidOperationException("Catalog was not found.");
 
-        bool imageExists = catalog.Images.Any(image => image.Id == imageId);
-        if (!imageExists)
+        CatalogImage? image = catalog.Images.FirstOrDefault(existingImage => existingImage.Id == imageId);
+        if (image is null)
             throw new InvalidOperationException("The selected image does not belong to this catalog.");
 
-        catalog.ActiveImageId = imageId;
+        List<CatalogImage> orderedImages = catalog.Images
+                                                 .OrderBy(existingImage => existingImage.SortOrder)
+                                                 .ThenBy(existingImage => existingImage.Id)
+                                                 .ToList();
+        int index = orderedImages.FindIndex(existingImage => existingImage.Id == imageId);
+        int targetIndex = index + offset;
+        if (targetIndex < 0 || targetIndex >= orderedImages.Count)
+        {
+            return await GetCatalogAsync(catalogId, cancellationToken).ConfigureAwait(false)
+                   ?? throw new InvalidOperationException("Catalog was not found after update.");
+        }
+
+        orderedImages.RemoveAt(index);
+        orderedImages.Insert(targetIndex, image);
+
+        for (int orderedIndex = 0; orderedIndex < orderedImages.Count; orderedIndex++)
+        {
+            orderedImages[orderedIndex].SortOrder = orderedIndex;
+        }
+
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         return await GetCatalogAsync(catalogId, cancellationToken).ConfigureAwait(false)
                ?? throw new InvalidOperationException("Catalog was not found after update.");
     }
 
-    private async Task<CatalogImage> UploadSingleImageAsync(Catalog catalog, IFormFile file, CancellationToken cancellationToken)
+    public async Task DeleteCatalogAsync(int catalogId, CancellationToken cancellationToken)
+    {
+        Catalog catalog = await dbContext.Catalogs
+                                         .FirstOrDefaultAsync(existingCatalog => existingCatalog.Id == catalogId, cancellationToken)
+                                         .ConfigureAwait(false)
+                          ?? throw new InvalidOperationException("Catalog was not found.");
+
+        string catalogDirectory = fileStorage.GetCatalogDirectory(catalog.Slug);
+
+        dbContext.Catalogs.Remove(catalog);
+        await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        TryDeleteDirectory(catalogDirectory);
+    }
+
+    private async Task<CatalogImage> UploadSingleImageAsync(Catalog catalog, IFormFile file, int sortOrder, CancellationToken cancellationToken)
     {
         string storageKey = Guid.NewGuid().ToString("N");
         string originalPath = fileStorage.GetOriginalRasterPath(catalog.Slug, storageKey);
@@ -161,6 +205,7 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
                 NormalizedPath = normalizedPath,
                 OriginalFileSizeBytes = file.Length,
                 UploadedUtc = DateTimeOffset.UtcNow,
+                SortOrder = sortOrder,
                 CoordinateSystem = "EPSG:3857",
                 Width = raster.Size.Width,
                 Height = raster.Size.Height,
@@ -171,7 +216,6 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
             };
 
             dbContext.CatalogImages.Add(image);
-            catalog.ActiveImage = image;
             await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
             return image;

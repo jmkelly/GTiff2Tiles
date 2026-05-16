@@ -31,11 +31,6 @@ public sealed class ServerDbContext(DbContextOptions<ServerDbContext> options) :
                   .WithOne(image => image.Catalog)
                   .HasForeignKey(image => image.CatalogId)
                   .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(catalog => catalog.ActiveImage)
-                  .WithMany()
-                  .HasForeignKey(catalog => catalog.ActiveImageId)
-                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<CatalogImage>(entity =>

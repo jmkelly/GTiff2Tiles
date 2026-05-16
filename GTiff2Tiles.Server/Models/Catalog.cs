@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GTiff2Tiles.Server.Models;
 
@@ -19,9 +20,8 @@ public sealed class Catalog
 
     public DateTimeOffset CreatedUtc { get; set; } = DateTimeOffset.UtcNow;
 
-    public int? ActiveImageId { get; set; }
-
-    public CatalogImage? ActiveImage { get; set; }
+    [NotMapped]
+    public int ImageCount { get; set; }
 
     public ICollection<CatalogImage> Images { get; set; } = [];
 }

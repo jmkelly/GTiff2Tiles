@@ -33,6 +33,8 @@ public sealed class CatalogImage
 
     public DateTimeOffset UploadedUtc { get; set; } = DateTimeOffset.UtcNow;
 
+    public int SortOrder { get; set; }
+
     [Required]
     [StringLength(32)]
     public string CoordinateSystem { get; set; } = "EPSG:3857";
