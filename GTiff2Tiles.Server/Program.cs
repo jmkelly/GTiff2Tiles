@@ -40,6 +40,7 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddSingleton<SlugGenerator>();
 builder.Services.AddSingleton<LocalFileStorage>();
+builder.Services.AddSingleton<TileRendererCache>();
 builder.Services.AddScoped<CatalogService>();
 builder.Services.AddScoped<TileService>();
 
