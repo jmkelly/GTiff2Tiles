@@ -60,6 +60,14 @@ button:hover,
   background: #dbe5ff;
 }
 
+.button-link.danger {
+  background: #b42318;
+}
+
+.button-link.danger:hover {
+  background: #8f1c13;
+}
+
 label {
   display: block;
   margin: 0.85rem 0 0.35rem;
@@ -166,6 +174,10 @@ form {
   gap: 0.65rem;
 }
 
+.catalog-actions form {
+  margin: 0;
+}
+
 .inline-actions {
   margin-top: 0.85rem;
 }
@@ -227,8 +239,20 @@ form {
 .catalog-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: start;
   gap: 1rem;
+}
+
+.catalog-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.catalog-item-actions form {
+  margin: 0;
 }
 
 .badge {
@@ -259,6 +283,7 @@ form {
   }
 
   .catalog-item form,
+  .catalog-item-actions,
   .catalog-item .button-link,
   .catalog-actions,
   .catalog-actions .button-link,

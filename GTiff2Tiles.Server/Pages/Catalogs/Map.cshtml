@@ -29,17 +29,17 @@
         <div class="route-preview map-meta">
             <p><strong>XYZ route</strong></p>
             <code>@Model.TileRouteTemplate</code>
-            @if (Model.HasActiveImage)
+            @if (Model.HasImages)
             {
-                <p class="muted">Rendering the active raster on demand on top of OpenStreetMap.</p>
+                <p class="muted">Rendering the full catalog mosaic on demand on top of OpenStreetMap.</p>
             }
         </div>
 
-        @if (!Model.HasActiveImage)
+        @if (!Model.HasImages)
         {
             <div class="route-preview map-empty-state">
-                <h2>No active image yet</h2>
-                <p class="muted">Upload a GeoTIFF or set an existing upload as active before opening the map viewer.</p>
+                <h2>No images yet</h2>
+                <p class="muted">Upload one or more GeoTIFFs before opening the map viewer.</p>
                 <a class="button-link" asp-page="/Catalogs/Details" asp-route-id="@Model.Id">Go to catalog details</a>
             </div>
         }
@@ -62,15 +62,15 @@
             </div>
 
             <div class="map-meta muted">
-                <p><strong>Active image:</strong> @Model.Catalog.ActiveImage!.OriginalFileName</p>
-                <p><strong>Normalized raster size:</strong> @Model.Catalog.ActiveImage.Width × @Model.Catalog.ActiveImage.Height</p>
+                <p><strong>Mosaic layers:</strong> @Model.Catalog.Images.Count</p>
+                <p><strong>Top layer:</strong> @Model.Catalog.Images.OrderBy(image => image.SortOrder).ThenBy(image => image.Id).Last().OriginalFileName</p>
             </div>
         }
     </section>
 </div>
 
 @section Scripts {
-    @if (Model.HasActiveImage)
+    @if (Model.HasImages)
     {
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
         <script src="~/js/catalog-map.js" asp-append-version="true"></script>

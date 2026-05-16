@@ -11,7 +11,7 @@
     <input asp-for="Files" type="file" accept=".tif,.tiff,image/tiff" multiple />
     <span asp-validation-for="Files" class="validation-message"></span>
 
-    <p class="muted">Uploads are normalized to EPSG:3857/Byte when needed. You can upload multiple GeoTIFFs at once, and the newest uploaded image becomes active for the catalog.</p>
+    <p class="muted">Uploads are normalized to EPSG:3857/Byte when needed. Every uploaded GeoTIFF is included in the catalog mosaic by default, and you can reorder the stack after upload.</p>
 
     <button type="submit">Upload GeoTIFFs</button>
 </form>

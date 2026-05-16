@@ -14,7 +14,7 @@
             </div>
 
             <div class="page-actions">
-                @if (Model.Catalog.ActiveImage is not null)
+                @if (Model.Catalog.Images.Count > 0)
                 {
                     <a class="button-link secondary" asp-page="/Catalogs/Map" asp-route-id="@Model.Id">View map</a>
                 }

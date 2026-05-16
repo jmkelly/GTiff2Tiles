@@ -13,7 +13,7 @@ public sealed class MapModel(CatalogService catalogService) : PageModel
 
     public Catalog Catalog { get; private set; } = null!;
 
-    public bool HasActiveImage => Catalog.ActiveImage is not null;
+    public bool HasImages => Catalog.Images.Count > 0;
 
     public string TileRouteTemplate => $"/{Catalog.Slug}/{{z}}/{{x}}/{{y}}";
 
@@ -33,10 +33,15 @@ public sealed class MapModel(CatalogService catalogService) : PageModel
 
         Catalog = catalog;
 
-        if (Catalog.ActiveImage is not null)
+        if (Catalog.Images.Count > 0)
         {
-            MercatorCoordinate minCoordinate = new(Catalog.ActiveImage.MinX, Catalog.ActiveImage.MinY);
-            MercatorCoordinate maxCoordinate = new(Catalog.ActiveImage.MaxX, Catalog.ActiveImage.MaxY);
+            double minX = Catalog.Images.Min(image => image.MinX);
+            double minY = Catalog.Images.Min(image => image.MinY);
+            double maxX = Catalog.Images.Max(image => image.MaxX);
+            double maxY = Catalog.Images.Max(image => image.MaxY);
+
+            MercatorCoordinate minCoordinate = new(minX, minY);
+            MercatorCoordinate maxCoordinate = new(maxX, maxY);
 
             GeodeticCoordinate minGeodetic = minCoordinate.ToGeodeticCoordinate();
             GeodeticCoordinate maxGeodetic = maxCoordinate.ToGeodeticCoordinate();

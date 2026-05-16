@@ -17,14 +17,21 @@ else
                     {
                         <p class="muted">@catalog.Description</p>
                     }
-                    <p class="muted">Images: @catalog.Images.Count • Active: @(catalog.ActiveImage?.OriginalFileName ?? "none")</p>
+                    <p class="muted">Images: @catalog.ImageCount</p>
                 </div>
                 <div class="catalog-actions">
                     <a class="button-link" asp-page="/Catalogs/Details" asp-route-id="@catalog.Id">Manage</a>
-                    @if (catalog.ActiveImage is not null)
+                    @if (catalog.ImageCount > 0)
                     {
                         <a class="button-link secondary" asp-page="/Catalogs/Map" asp-route-id="@catalog.Id">View map</a>
                     }
+                    <form hx-post="@Url.Page("/Index", "Delete", new { id = catalog.Id })"
+                          hx-target="#catalog-list"
+                          hx-swap="innerHTML"
+                          onsubmit="return confirm('Delete this catalog and all uploaded imagery?');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="button-link danger">Delete</button>
+                    </form>
                 </div>
             </article>
         }

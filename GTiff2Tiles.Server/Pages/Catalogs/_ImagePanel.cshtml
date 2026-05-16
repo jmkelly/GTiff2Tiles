@@ -2,7 +2,7 @@
 
 <div class="section-heading">
     <h2>Catalog imagery</h2>
-    <span class="muted">One active GeoTIFF is served per catalog.</span>
+    <span class="muted">All uploaded GeoTIFFs are served in order as one mosaic.</span>
 </div>
 
 @if (!ViewData.ModelState.IsValid)
@@ -10,51 +10,57 @@
     <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
 }
 
-@if (Model.ActiveImage is null)
+@{
+    var orderedImages = Model.Images.OrderBy(image => image.SortOrder).ThenBy(image => image.Id).ToList();
+}
+
+@if (orderedImages.Count == 0)
 {
-    <p class="muted">No active image yet. Upload a GeoTIFF to start serving tiles.</p>
+    <p class="muted">No images yet. Upload GeoTIFFs to start serving tiles.</p>
 }
 else
 {
     <article class="active-image">
-        <h3>Active image</h3>
-        <p><strong>@Model.ActiveImage.OriginalFileName</strong></p>
-        <p class="muted">Uploaded @Model.ActiveImage.UploadedUtc.UtcDateTime.ToString("u")</p>
-        <p class="muted">Normalized size: @Model.ActiveImage.Width × @Model.ActiveImage.Height</p>
-        <p class="muted">Bounds: [@Model.ActiveImage.MinX, @Model.ActiveImage.MinY] → [@Model.ActiveImage.MaxX, @Model.ActiveImage.MaxY]</p>
+        <h3>Mosaic order</h3>
+        <p class="muted">Images higher in the list are drawn first. Move an image up or down to change how the mosaic is composed.</p>
     </article>
 }
 
 <h3>Uploads</h3>
-@if (Model.Images.Count == 0)
+@if (orderedImages.Count == 0)
 {
     <p class="muted">No uploads for this catalog yet.</p>
 }
 else
 {
     <div class="image-list">
-        @foreach (var image in Model.Images.OrderByDescending(image => image.UploadedUtc))
+        @for (int index = 0; index < orderedImages.Count; index++)
         {
-            bool isActive = Model.ActiveImageId == image.Id;
+            var image = orderedImages[index];
+            bool canMoveUp = index > 0;
+            bool canMoveDown = index < orderedImages.Count - 1;
             <article class="catalog-item">
                 <div>
                     <p><strong>@image.OriginalFileName</strong></p>
                     <p class="muted">Uploaded @image.UploadedUtc.UtcDateTime.ToString("u")</p>
                     <p class="muted">@image.Width × @image.Height • @string.Format("{0:N0}", image.OriginalFileSizeBytes) bytes</p>
+                    <p class="muted">Bounds: [@image.MinX, @image.MinY] → [@image.MaxX, @image.MaxY]</p>
                 </div>
-                @if (isActive)
-                {
-                    <span class="badge">Active</span>
-                }
-                else
-                {
+                <div class="catalog-item-actions">
+                    <span class="badge">Layer @(index + 1)</span>
                     <form method="post"
-                          hx-post="@Url.Page("/Catalogs/Details", "SetActive", new { id = Model.Id, imageId = image.Id })"
+                          hx-post="@Url.Page("/Catalogs/Details", "MoveImage", new { id = Model.Id, imageId = image.Id, offset = -1 })"
                           hx-target="#image-panel"
                           hx-swap="innerHTML">
-                        <button type="submit">Set active</button>
+                        <button type="submit" disabled="@(!canMoveUp)">Move up</button>
                     </form>
-                }
+                    <form method="post"
+                          hx-post="@Url.Page("/Catalogs/Details", "MoveImage", new { id = Model.Id, imageId = image.Id, offset = 1 })"
+                          hx-target="#image-panel"
+                          hx-swap="innerHTML">
+                        <button type="submit" disabled="@(!canMoveDown)">Move down</button>
+                    </form>
+                </div>
             </article>
         }
     </div>

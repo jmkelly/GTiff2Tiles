@@ -82,11 +82,11 @@ public sealed class DetailsModel(CatalogService catalogService) : PageModel
         return new EmptyResult();
     }
 
-    public async Task<IActionResult> OnPostSetActiveAsync(int imageId, CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostMoveImageAsync(int imageId, int offset, CancellationToken cancellationToken)
     {
         try
         {
-            await catalogService.SetActiveImageAsync(Id, imageId, cancellationToken).ConfigureAwait(false);
+            await catalogService.MoveImageAsync(Id, imageId, offset, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception)
         {

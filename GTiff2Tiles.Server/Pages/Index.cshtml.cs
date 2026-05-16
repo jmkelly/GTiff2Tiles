@@ -19,4 +19,19 @@ public sealed class IndexModel(CatalogService catalogService) : PageModel
         IReadOnlyList<Catalog> catalogs = await catalogService.GetCatalogsAsync(cancellationToken).ConfigureAwait(false);
         return Partial("_CatalogList", catalogs);
     }
+
+    public async Task<IActionResult> OnPostDeleteAsync(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await catalogService.DeleteCatalogAsync(id, cancellationToken).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+
+        IReadOnlyList<Catalog> catalogs = await catalogService.GetCatalogsAsync(cancellationToken).ConfigureAwait(false);
+        return Partial("_CatalogList", catalogs);
+    }
 }
