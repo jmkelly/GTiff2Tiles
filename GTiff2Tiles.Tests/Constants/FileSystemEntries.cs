@@ -8,18 +8,26 @@ internal static class FileSystemEntries
 
     private const string ExamplesDirectoryName = "Examples";
 
-    private static string ExamplesDirectoryPath
-    {
-        get
-        {
-            DirectoryInfo di = new DirectoryInfo(Assembly.GetExecutingAssembly().Location)
-                              .Parent?.Parent?.Parent?.Parent?.Parent;
-
-            return Path.Combine(di?.FullName ?? throw new InvalidOperationException(), ExamplesDirectoryName);
-        }
-    }
+    private static string ExamplesDirectoryPath => FindExamplesDirectory();
 
     #endregion
+
+    private static string FindExamplesDirectory()
+    {
+        DirectoryInfo? directory = new(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
+                                       ?? throw new InvalidOperationException());
+
+        while (directory is not null)
+        {
+            string candidate = Path.Combine(directory.FullName, ExamplesDirectoryName);
+            if (Directory.Exists(candidate))
+                return candidate;
+
+            directory = directory.Parent;
+        }
+
+        throw new InvalidOperationException($"Could not locate '{ExamplesDirectoryName}' from the test assembly path.");
+    }
 
     #region Input
 
