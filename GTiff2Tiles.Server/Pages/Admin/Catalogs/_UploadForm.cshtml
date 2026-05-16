@@ -1,0 +1,34 @@
+@model GTiff2Tiles.Server.Models.UploadGeoTiffInput
+
+<div class="section-heading">
+    <h2>Upload imagery</h2>
+</div>
+
+<form method="post"
+      enctype="multipart/form-data"
+      hx-post="@Url.Page("/Admin/Catalogs/Details", "Upload", new { id = ViewContext.RouteData.Values["id"] })"
+      hx-target="#upload-form"
+      hx-swap="innerHTML"
+      hx-disabled-elt="find button">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    <div class="upload-zone">
+        <label asp-for="Files" style="margin-top: 0; cursor: pointer;">
+            <span style="font-size: 1.1rem; color: var(--amber); display: block; margin-bottom: 0.25rem;">Select GeoTIFF files</span>
+        </label>
+        <input asp-for="Files" type="file" accept=".tif,.tiff,image/tiff" multiple />
+        <span asp-validation-for="Files" class="validation-message"></span>
+
+        <p class="muted" style="font-size: 0.8rem; margin-top: 0.75rem; margin-bottom: 0;">Uploads are normalized to EPSG:3857/Byte. Each GeoTIFF joins the catalog mosaic stack.</p>
+    </div>
+
+    <div style="margin-top: 1rem;">
+        <button type="submit">
+            <span class="htmx-indicator" id="upload-spinner">
+                Uploading...
+            </span>
+            <span class="htmx-settling">Upload GeoTIFFs</span>
+        </button>
+    </div>
+</form>

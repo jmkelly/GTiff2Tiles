@@ -1,0 +1,78 @@
+@page "{id:int}"
+@model GTiff2Tiles.Server.Pages.Admin.Catalogs.DetailsModel
+@{
+    ViewData["Title"] = Model.Catalog.Name;
+}
+
+<a class="back-link" asp-page="/Admin/Index">Back to catalogs</a>
+
+<div class="coord-bar">
+    <span>Catalog</span>
+    <span>&mdash;</span>
+    <span>@Model.Catalog.Name</span>
+</div>
+
+<div class="page-grid details-grid">
+    <section class="card">
+        <div class="section-heading">
+            <div>
+                <h1>Manage catalog</h1>
+                <p class="muted">Update details, upload imagery, configure the mosaic stack.</p>
+            </div>
+
+            <div class="page-actions">
+                @if (Model.Catalog.Images.Count > 0)
+                {
+                    <a class="button-link secondary" asp-page="/Admin/Catalogs/Map" asp-route-id="@Model.Id">View map</a>
+                }
+                <a class="button-link" asp-page="/Admin/Index">Done</a>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <form method="post" asp-page-handler="Update" class="stacked-section">
+            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+            <label asp-for="UpdateCatalog.Name">Catalog name</label>
+            <input asp-for="UpdateCatalog.Name" />
+            <span asp-validation-for="UpdateCatalog.Name" class="validation-message"></span>
+
+            <label asp-for="UpdateCatalog.Slug">URL slug</label>
+            <input asp-for="UpdateCatalog.Slug" />
+            <span class="muted">Tile route updates as the slug changes.</span>
+            <span asp-validation-for="UpdateCatalog.Slug" class="validation-message"></span>
+
+            <label asp-for="UpdateCatalog.Description">Description</label>
+            <textarea asp-for="UpdateCatalog.Description" rows="3"></textarea>
+            <span asp-validation-for="UpdateCatalog.Description" class="validation-message"></span>
+
+            <div style="margin-top: 1.25rem;">
+                <button type="submit">Save catalog details</button>
+            </div>
+        </form>
+
+        <div class="divider"></div>
+
+        <div class="route-preview">
+            <strong>XYZ tile route</strong>
+            <code>/@Model.Catalog.Slug/{z}/{x}/{y}</code>
+        </div>
+
+        <div class="divider"></div>
+
+        <div id="upload-form"
+             hx-get="@Url.Page("/Admin/Catalogs/Details", "UploadForm", new { id = Model.Id })"
+             hx-trigger="load, image-updated from:body"
+             hx-swap="innerHTML">
+        </div>
+    </section>
+
+    <section class="card">
+        <div id="image-panel"
+             hx-get="@Url.Page("/Admin/Catalogs/Details", "ImagePanel", new { id = Model.Id })"
+             hx-trigger="load, image-updated from:body"
+             hx-swap="innerHTML">
+        </div>
+    </section>
+</div>

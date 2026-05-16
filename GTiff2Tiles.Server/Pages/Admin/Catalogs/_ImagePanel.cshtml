@@ -1,0 +1,79 @@
+@model GTiff2Tiles.Server.Models.Catalog
+
+<div class="section-heading">
+    <h2>Catalog imagery</h2>
+    <span class="muted">@Model.Images.Count layer@(Model.Images.Count != 1 ? "s" : "")</span>
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+}
+
+@{
+    var orderedImages = Model.Images.OrderBy(image => image.SortOrder).ThenBy(image => image.Id).ToList();
+}
+
+@if (orderedImages.Count > 0)
+{
+    <div class="active-image" style="margin-bottom: 1.25rem;">
+        <h3 style="margin-bottom: 0.35rem;">Mosaic order</h3>
+        <p class="muted" style="margin-bottom: 0; font-size: 0.825rem;">Layers drawn bottom-to-top. Move images up or down to change compositing order.</p>
+    </div>
+}
+
+<div class="image-list">
+    @for (int index = 0; index < orderedImages.Count; index++)
+    {
+        var image = orderedImages[index];
+        bool canMoveUp = index > 0;
+        bool canMoveDown = index < orderedImages.Count - 1;
+        <article class="catalog-item">
+            <div>
+                <div style="display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.35rem;">
+                    <span class="layer-order">@(index + 1)</span>
+                    <strong>@image.OriginalFileName</strong>
+                </div>
+                <div class="image-meta">
+                    <p><strong>Dimensions:</strong> @image.Width x @image.Height</p>
+                    <p><strong>Size:</strong> @string.Format("{0:N0}", image.OriginalFileSizeBytes) bytes</p>
+                    <p><strong>Bounds:</strong> [@string.Format("{0:N2}", image.MinX), @string.Format("{0:N2}", image.MinY)] &rarr; [@string.Format("{0:N2}", image.MaxX), @string.Format("{0:N2}", image.MaxY)]</p>
+                    <p><strong>Uploaded:</strong> @image.UploadedUtc.UtcDateTime.ToString("u")</p>
+                </div>
+            </div>
+            <div class="catalog-item-actions">
+                <form method="post"
+                      hx-post="@Url.Page("/Admin/Catalogs/Details", "MoveImage", new { id = Model.Id, imageId = image.Id, offset = -1 })"
+                      hx-target="#image-panel"
+                      hx-swap="innerHTML">
+                    <button type="submit" disabled="@(!canMoveUp)" class="button-link secondary" style="padding: 0.45rem 0.7rem; font-size: 0.8rem;">Up</button>
+                </form>
+                <form method="post"
+                      hx-post="@Url.Page("/Admin/Catalogs/Details", "MoveImage", new { id = Model.Id, imageId = image.Id, offset = 1 })"
+                      hx-target="#image-panel"
+                      hx-swap="innerHTML">
+                    <button type="submit" disabled="@(!canMoveDown)" class="button-link secondary" style="padding: 0.45rem 0.7rem; font-size: 0.8rem;">Down</button>
+                </form>
+                <form method="post"
+                      hx-post="@Url.Page("/Admin/Catalogs/Details", "RemoveImage", new { id = Model.Id, imageId = image.Id })"
+                      hx-target="#image-panel"
+                      hx-swap="innerHTML"
+                      onsubmit="return confirm('Remove this image from the catalog? The file will be permanently deleted.');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="button-link danger" style="padding: 0.45rem 0.7rem; font-size: 0.8rem;">Remove</button>
+                </form>
+            </div>
+            <div class="catalog-item-thumbnail">
+                <img src="/@Model.Slug/images/@image.Id/thumbnail" alt="Thumbnail of @image.OriginalFileName" loading="lazy" />
+            </div>
+        </article>
+    }
+}
+
+@if (orderedImages.Count == 0)
+{
+    <div class="map-empty-state">
+        <h3>No imagery uploaded</h3>
+        <p class="muted">Upload GeoTIFFs to start serving tiles from this catalog.</p>
+    </div>
+}

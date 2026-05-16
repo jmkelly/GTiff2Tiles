@@ -1,0 +1,30 @@
+@page
+@model GTiff2Tiles.Server.Pages.Admin.Catalogs.CreateModel
+@{
+    ViewData["Title"] = "Create catalog";
+}
+
+<a class="back-link" asp-page="/Admin/Index">Back to catalogs</a>
+
+<div class="coord-bar">
+    <span>New Catalog</span>
+    <span>&mdash;</span>
+    <span>Registration</span>
+</div>
+
+<section class="card single-card create-card">
+    <div class="section-heading">
+        <div>
+            <h1>Create catalog</h1>
+            <p class="muted">Register a new catalog, then proceed to upload imagery and configure the mosaic stack.</p>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <partial name="/Pages/Admin/_CreateCatalogForm.cshtml" model="Model.CreateCatalog" />
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

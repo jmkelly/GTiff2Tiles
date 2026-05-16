@@ -1,0 +1,88 @@
+@page "{id:int}/Map"
+@using System.Text.Json
+@model GTiff2Tiles.Server.Pages.Admin.Catalogs.MapModel
+@{
+    ViewData["Title"] = $"{Model.Catalog.Name} Map";
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+
+<a class="back-link" asp-page="/Admin/Catalogs/Details" asp-route-id="@Model.Id">Back to catalog</a>
+
+<div class="coord-bar">
+    <span>Map Viewer</span>
+    <span>&mdash;</span>
+    <span>@Model.Catalog.Name</span>
+    @if (Model.HasImages)
+    {
+        <span>&mdash;</span>
+        <span>@Model.Catalog.Images.Count layer@(Model.Catalog.Images.Count != 1 ? "s" : "")</span>
+    }
+</div>
+
+<section class="card map-shell">
+    <div class="section-heading">
+        <div>
+            <h1>@Model.Catalog.Name</h1>
+            @if (!string.IsNullOrWhiteSpace(Model.Catalog.Description))
+            {
+                <p class="muted">@Model.Catalog.Description</p>
+            }
+            else
+            {
+                <p class="muted">Slug: <code>@Model.Catalog.Slug</code></p>
+            }
+        </div>
+
+        <div class="page-actions">
+            <a class="button-link" asp-page="/Admin/Catalogs/Details" asp-route-id="@Model.Id">Manage catalog</a>
+        </div>
+    </div>
+
+    @if (!Model.HasImages)
+    {
+        <div class="map-empty-state">
+            <h2>No imagery loaded</h2>
+            <p class="muted">Upload one or more GeoTIFFs before opening the map viewer.</p>
+            <a class="button-link" asp-page="/Admin/Catalogs/Details" asp-route-id="@Model.Id">Go to catalog details</a>
+        </div>
+    }
+    else
+    {
+        <div class="route-preview" style="margin-bottom: 1rem;">
+            <strong>XYZ route</strong>
+            <code>@Model.TileRouteTemplate</code>
+        </div>
+
+        <div class="map-toolbar">
+            <label for="overlay-opacity">Opacity</label>
+            <input id="overlay-opacity" type="range" min="0" max="1" step="0.05" value="0.75" />
+            <span class="opacity-value" id="opacity-value">0.75</span>
+            <div style="flex: 1;"></div>
+            <span class="badge">@Model.Catalog.Images.Count layer@(Model.Catalog.Images.Count != 1 ? "s" : "")</span>
+        </div>
+
+        <div id="catalog-map"
+             class="map-container"
+             data-catalog-name="@Model.Catalog.Name"
+             data-tile-url="@Model.TileRouteTemplate"
+             data-bounds='@JsonSerializer.Serialize(new[]
+                          {
+                              new[] { Model.South!.Value, Model.West!.Value },
+                              new[] { Model.North!.Value, Model.East!.Value }
+                          })'>
+        </div>
+
+        <div class="map-meta muted" style="margin-top: 0.75rem;">
+            <p><strong>Top layer:</strong> @Model.Catalog.Images.OrderBy(image => image.SortOrder).ThenBy(image => image.Id).Last().OriginalFileName</p>
+        </div>
+    }
+</section>
+
+@section Scripts {
+    @if (Model.HasImages)
+    {
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+        <script src="~/js/catalog-map.js" asp-append-version="true"></script>
+    }
+}
