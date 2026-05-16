@@ -8,36 +8,41 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - GTiff2Tiles Server</title>
+    <title>@ViewData["Title"] - GTiff2Tiles</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/GTiff2Tiles.Server.styles.css" asp-append-version="true" />
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
 <body>
     <header class="site-header">
-        <div class="shell header-shell">
-            <a class="site-title" asp-page="/Index">GTiff2Tiles Server</a>
-            <span class="muted">Local-dev image catalog and on-demand XYZ tiling</span>
-            <nav class="auth-nav">
-                @if (SignInManager.IsSignedIn(User))
-                {
-                    <span class="account-email muted">@User.Identity!.Name</span>
-                    <a class="button-link secondary" asp-area="Identity" asp-page="/Account/Manage/Index">Account</a>
-                    <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/")" method="post" class="inline-form">
-                        <button type="submit" class="button-link secondary">Log out</button>
-                    </form>
-                }
-                else
-                {
-                    <a class="button-link secondary" asp-area="Identity" asp-page="/Account/Register">Register</a>
-                    <a class="button-link secondary" asp-area="Identity" asp-page="/Account/Login">Log in</a>
-                }
-            </nav>
+        <div class="shell">
+            <div class="header-shell">
+                <div class="header-left">
+                    <a class="site-title" asp-page="/Admin/Index">GTiff2Tiles</a>
+                </div>
+                <nav class="auth-nav">
+                    @if (SignInManager.IsSignedIn(User))
+                    {
+                        <span class="account-email">@User.Identity!.Name</span>
+                        <a class="button-link secondary" asp-area="Identity" asp-page="/Account/Manage/Index">Account</a>
+                        <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/Admin/Index")" method="post" class="inline-form">
+                            <button type="submit" class="button-link secondary">Log out</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a class="button-link secondary" asp-area="Identity" asp-page="/Account/Register">Register</a>
+                        <a class="button-link secondary" asp-area="Identity" asp-page="/Account/Login">Log in</a>
+                    }
+                </nav>
+            </div>
         </div>
     </header>
 
-    <main class="shell main-shell">
-        @RenderBody()
+    <main class="main-shell">
+        <div class="shell">
+            @RenderBody()
+        </div>
     </main>
 
     @await RenderSectionAsync("Scripts", required: false)

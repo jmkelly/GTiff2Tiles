@@ -1,22 +1,177 @@
 @page
-@model GTiff2Tiles.Server.Pages.IndexModel
 @{
-    ViewData["Title"] = "Catalog Admin";
+    ViewData["Title"] = "GTiff2Tiles - GeoTIFF Tile Server";
 }
 
-<section class="card single-card">
-    <div class="section-heading">
-        <div>
-            <h1>Catalog admin</h1>
-            <p class="muted">Create catalogs, manage catalog details, upload GeoTIFFs, and serve XYZ tiles from the active raster in each catalog.</p>
+<section class="hero">
+    <div class="hero-content">
+        <h1>GeoTIFF to Tile Server</h1>
+        <p class="hero-subtitle">Transform geospatial imagery into interactive web maps. Upload GeoTIFFs, serve XYZ tiles instantly.</p>
+        <div class="hero-actions">
+            <a class="button-link" asp-page="/Admin/Index">Get Started</a>
+            <a class="button-link secondary" href="#features">Learn More</a>
         </div>
+    </div>
+</section>
 
-        <a class="button-link" asp-page="/Catalogs/Create">Create catalog</a>
+<section id="features" class="shell-wide features-section">
+    <div class="section-heading centered">
+        <div>
+            <h2>Features</h2>
+            <p class="muted">Everything you need to serve geospatial tiles on the web.</p>
+        </div>
     </div>
 
-    <div id="catalog-list"
-         hx-get="@Url.Page("/Index", "CatalogList")"
-         hx-trigger="load"
-         hx-swap="innerHTML">
+    <div class="features-grid">
+        <article class="feature-card">
+            <div class="feature-marker">
+                <span class="feature-number">01</span>
+                <span class="feature-station">STA 3857</span>
+            </div>
+            <h3>GeoTIFF Upload</h3>
+            <p>Upload your GeoTIFF files directly through the web interface. Files are automatically normalized to Web Mercator (EPSG:3857) for seamless web rendering.</p>
+        </article>
+
+        <article class="feature-card">
+            <div class="feature-marker">
+                <span class="feature-number">02</span>
+                <span class="feature-station">STA 4326</span>
+            </div>
+            <h3>Interactive Map Viewer</h3>
+            <p>Preview your tiles on an interactive Leaflet map with adjustable opacity controls. Layer multiple GeoTIFFs in a mosaic stack with full compositing order control.</p>
+        </article>
+
+        <article class="feature-card">
+            <div class="feature-marker">
+                <span class="feature-number">03</span>
+                <span class="feature-station">STA 9009</span>
+            </div>
+            <h3>On-Demand Tiles</h3>
+            <p>XYZ tiles rendered on demand and cached for performance. No pre-generation step required tiles are computed only when requested.</p>
+        </article>
+
+        <article class="feature-card">
+            <div class="feature-marker">
+                <span class="feature-number">04</span>
+                <span class="feature-station">STA 2154</span>
+            </div>
+            <h3>Catalog Management</h3>
+            <p>Organize your imagery into catalogs with clean URL slugs. Each catalog serves tiles at <code>/slug/{z}/{x}/{y}</code> with thumbnail previews for each layer.</p>
+        </article>
+    </div>
+</section>
+
+<section class="shell-wide api-section">
+    <div class="section-heading centered">
+        <div>
+            <h2>Simple API</h2>
+            <p class="muted">Tiles served via standard XYZ convention, compatible with any web map library.</p>
+        </div>
+    </div>
+
+    <div class="api-cards">
+        <div class="api-card">
+            <div class="api-card-header">
+                <span class="badge http-badge">GET</span>
+                <code>/{catalog}/{z}/{x}/{y}</code>
+            </div>
+            <p class="muted">Serve rendered PNG tiles for a catalog. Compatible with Leaflet, MapLibre, OpenLayers, and more.</p>
+        </div>
+
+        <div class="api-card">
+            <div class="api-card-header">
+                <span class="badge http-badge">GET</span>
+                <code>/{catalog}/images/{id}/thumbnail</code>
+            </div>
+            <p class="muted">Generate and serve PNG thumbnails from GeoTIFF source files for catalog image previews.</p>
+        </div>
+    </div>
+</section>
+
+<section class="shell-wide screenshot-section">
+    <div class="section-heading centered">
+        <div>
+            <h2>Admin Interface</h2>
+            <p class="muted">Manage catalogs, upload imagery, and preview maps from a unified admin dashboard.</p>
+        </div>
+    </div>
+
+    <div class="screenshots">
+        <figure class="screenshot">
+            <div class="screenshot-placeholder">
+                <div class="screenshot-mockup">
+                    <div class="mockup-header">
+                        <span class="mockup-dot"></span>
+                        <span class="mockup-dot"></span>
+                        <span class="mockup-dot"></span>
+                        <span class="mockup-title">GTiff2Tiles - Catalog Admin</span>
+                    </div>
+                    <div class="mockup-body">
+                        <div class="mockup-sidebar">
+                            <div class="mockup-nav-item active"></div>
+                            <div class="mockup-nav-item"></div>
+                            <div class="mockup-nav-item"></div>
+                        </div>
+                        <div class="mockup-content">
+                            <div class="mockup-card">
+                                <div class="mockup-line wide"></div>
+                                <div class="mockup-line"></div>
+                                <div class="mockup-line short"></div>
+                            </div>
+                            <div class="mockup-card">
+                                <div class="mockup-line wide"></div>
+                                <div class="mockup-line"></div>
+                            </div>
+                            <div class="mockup-card">
+                                <div class="mockup-line"></div>
+                                <div class="mockup-line short"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <figcaption>Catalog dashboard with HTMX-powered list</figcaption>
+            </div>
+        </figure>
+
+        <figure class="screenshot">
+            <div class="screenshot-placeholder">
+                <div class="screenshot-mockup">
+                    <div class="mockup-header">
+                        <span class="mockup-dot"></span>
+                        <span class="mockup-dot"></span>
+                        <span class="mockup-dot"></span>
+                        <span class="mockup-title">GTiff2Tiles - Map Viewer</span>
+                    </div>
+                    <div class="mockup-body mockup-map">
+                        <div class="mockup-map-grid">
+                            <div class="mockup-map-tile"></div>
+                            <div class="mockup-map-tile"></div>
+                            <div class="mockup-map-tile"></div>
+                            <div class="mockup-map-tile"></div>
+                            <div class="mockup-map-tile"></div>
+                            <div class="mockup-map-tile"></div>
+                            <div class="mockup-map-tile"></div>
+                            <div class="mockup-map-tile"></div>
+                            <div class="mockup-map-tile"></div>
+                        </div>
+                        <div class="mockup-map-toolbar">
+                            <div class="mockup-slider"></div>
+                            <div class="mockup-badge"></div>
+                        </div>
+                    </div>
+                </div>
+                <figcaption>Interactive Leaflet map with opacity controls</figcaption>
+            </div>
+        </figure>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="shell">
+        <div class="cta-content">
+            <h2>Ready to serve your tiles?</h2>
+            <p class="muted">Create your first catalog and start serving GeoTIFF tiles on the web.</p>
+            <a class="button-link large" asp-page="/Admin/Index">Open Admin Dashboard</a>
+        </div>
     </div>
 </section>
