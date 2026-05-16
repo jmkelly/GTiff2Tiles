@@ -151,6 +151,40 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
                ?? throw new InvalidOperationException("Catalog was not found after update.");
     }
 
+    public async Task<Catalog> RemoveImageAsync(int catalogId, int imageId, CancellationToken cancellationToken)
+    {
+        Catalog catalog = await dbContext.Catalogs
+                                         .Include(existingCatalog => existingCatalog.Images)
+                                         .FirstOrDefaultAsync(existingCatalog => existingCatalog.Id == catalogId, cancellationToken)
+                                         .ConfigureAwait(false)
+                          ?? throw new InvalidOperationException("Catalog was not found.");
+
+        CatalogImage? image = catalog.Images.FirstOrDefault(existingImage => existingImage.Id == imageId);
+        if (image is null)
+            throw new InvalidOperationException("The selected image does not belong to this catalog.");
+
+        string imageDirectory = fileStorage.GetImageDirectory(catalog.Slug, image.StorageKey);
+
+        dbContext.CatalogImages.Remove(image);
+
+        List<CatalogImage> remainingImages = catalog.Images
+                                                    .Where(existingImage => existingImage.Id != imageId)
+                                                    .OrderBy(existingImage => existingImage.SortOrder)
+                                                    .ThenBy(existingImage => existingImage.Id)
+                                                    .ToList();
+        for (int orderedIndex = 0; orderedIndex < remainingImages.Count; orderedIndex++)
+        {
+            remainingImages[orderedIndex].SortOrder = orderedIndex;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        TryDeleteDirectory(imageDirectory);
+
+        return await GetCatalogAsync(catalogId, cancellationToken).ConfigureAwait(false)
+               ?? throw new InvalidOperationException("Catalog was not found after update.");
+    }
+
     public async Task DeleteCatalogAsync(int catalogId, CancellationToken cancellationToken)
     {
         Catalog catalog = await dbContext.Catalogs

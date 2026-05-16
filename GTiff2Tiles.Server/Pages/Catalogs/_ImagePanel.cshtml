@@ -60,6 +60,14 @@ else
                           hx-swap="innerHTML">
                         <button type="submit" disabled="@(!canMoveDown)">Move down</button>
                     </form>
+                    <form method="post"
+                          hx-post="@Url.Page("/Catalogs/Details", "RemoveImage", new { id = Model.Id, imageId = image.Id })"
+                          hx-target="#image-panel"
+                          hx-swap="innerHTML"
+                          onsubmit="return confirm('Remove this image from the catalog? The file will be permanently deleted.');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="button-link danger">Remove</button>
+                    </form>
                 </div>
             </article>
         }
