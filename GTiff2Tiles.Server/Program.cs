@@ -19,14 +19,25 @@ builder.Services.Configure<LocalStorageOptions>(options =>
     options.DatabasePath = Path.Combine(dataRoot, "server.db");
 });
 
+DatabaseOptions databaseOptions = builder.Configuration
+    .GetSection(DatabaseOptions.SectionName)
+    .Get<DatabaseOptions>() ?? new DatabaseOptions();
+
 builder.Services.AddDbContext<ServerDbContext>(
     (serviceProvider, options) =>
     {
-        LocalStorageOptions storageOptions = serviceProvider
-            .GetRequiredService<Microsoft.Extensions.Options.IOptions<LocalStorageOptions>>()
-            .Value;
-        Directory.CreateDirectory(Path.GetDirectoryName(storageOptions.DatabasePath)!);
-        options.UseSqlite($"Data Source={storageOptions.DatabasePath}");
+        if (string.Equals(databaseOptions.Provider, "PostgreSQL", StringComparison.OrdinalIgnoreCase))
+        {
+            options.UseNpgsql(databaseOptions.ConnectionString);
+        }
+        else
+        {
+            LocalStorageOptions storageOptions = serviceProvider
+                .GetRequiredService<Microsoft.Extensions.Options.IOptions<LocalStorageOptions>>()
+                .Value;
+            Directory.CreateDirectory(Path.GetDirectoryName(storageOptions.DatabasePath)!);
+            options.UseSqlite($"Data Source={storageOptions.DatabasePath}");
+        }
     }
 );
 
