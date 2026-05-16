@@ -1,6 +1,9 @@
 using GTiff2Tiles.Server.Data;
+using GTiff2Tiles.Server.Models;
 using GTiff2Tiles.Server.Options;
 using GTiff2Tiles.Server.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -49,6 +52,18 @@ builder.Services.ConfigureLargeGeoTiffUploads(maxRequestBodySizeBytes);
 builder.Services.AddRazorPages();
 builder.Services.AddHttpContextAccessor();
 
+builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
+{
+    options.SignIn.RequireConfirmedAccount = false;
+    options.Password.RequiredLength = 8;
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+})
+.AddEntityFrameworkStores<ServerDbContext>()
+.AddDefaultUI();
+
 builder.Services.AddSingleton<SlugGenerator>();
 builder.Services.AddSingleton<LocalFileStorage>();
 builder.Services.AddSingleton<TileRendererCache>();
@@ -60,10 +75,50 @@ var app = builder.Build();
 using (IServiceScope scope = app.Services.CreateScope())
 {
     ServerDbContext dbContext = scope.ServiceProvider.GetRequiredService<ServerDbContext>();
-    dbContext.Database.EnsureCreated();
+
+    try
+    {
+        dbContext.Database.Migrate();
+    }
+    catch (SqliteException ex) when (ex.SqliteErrorCode == 1 && ex.Message.Contains("already exists"))
+    {
+        dbContext.Database.ExecuteSqlRaw(
+            "CREATE TABLE IF NOT EXISTS \"__EFMigrationsHistory\" (\"MigrationId\" TEXT NOT NULL CONSTRAINT \"PK___EFMigrationsHistory\" PRIMARY KEY, \"ProductVersion\" TEXT NOT NULL)");
+
+        dbContext.Database.ExecuteSqlRaw(
+            "INSERT OR IGNORE INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ('20260516062403_InitialCreate', '10.0.0')");
+
+        dbContext.Database.Migrate();
+    }
 
     scope.ServiceProvider.GetRequiredService<LocalFileStorage>().EnsureStorageLayout();
     GTiff2Tiles.Core.GdalWorker.ConfigureGdal();
+
+    AdminUserOptions adminUserOptions = app.Configuration
+        .GetSection(AdminUserOptions.SectionName)
+        .Get<AdminUserOptions>() ?? new AdminUserOptions();
+
+    if (!string.IsNullOrWhiteSpace(adminUserOptions.Email) && !string.IsNullOrWhiteSpace(adminUserOptions.Password))
+    {
+        UserManager<ApplicationUser> userManager = scope.ServiceProvider
+            .GetRequiredService<UserManager<ApplicationUser>>();
+
+        if (!await userManager.Users.AnyAsync())
+        {
+            ApplicationUser adminUser = new()
+            {
+                UserName = adminUserOptions.Email,
+                Email = adminUserOptions.Email
+            };
+
+            IdentityResult result = await userManager.CreateAsync(adminUser, adminUserOptions.Password);
+            if (!result.Succeeded)
+            {
+                Console.Error.WriteLine(
+                    $"Failed to seed admin user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+        }
+    }
 }
 
 if (!app.Environment.IsDevelopment())
@@ -74,6 +129,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet(

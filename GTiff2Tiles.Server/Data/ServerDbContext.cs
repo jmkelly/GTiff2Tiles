@@ -1,9 +1,11 @@
 using GTiff2Tiles.Server.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace GTiff2Tiles.Server.Data;
 
-public sealed class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbContext(options)
+public sealed class ServerDbContext(DbContextOptions<ServerDbContext> options)
+    : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<Catalog> Catalogs => Set<Catalog>();
 
@@ -12,6 +14,8 @@ public sealed class ServerDbContext(DbContextOptions<ServerDbContext> options) :
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
+
+        base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<Catalog>(entity =>
         {
