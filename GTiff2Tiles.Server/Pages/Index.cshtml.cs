@@ -1,10 +1,12 @@
 using GTiff2Tiles.Server.Models;
 using GTiff2Tiles.Server.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace GTiff2Tiles.Server.Pages;
 
+[Authorize]
 public sealed class IndexModel(CatalogService catalogService) : PageModel
 {
     public IReadOnlyList<Catalog> Catalogs { get; private set; } = [];

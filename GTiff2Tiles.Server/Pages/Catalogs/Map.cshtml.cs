@@ -1,11 +1,13 @@
 using GTiff2Tiles.Core.Coordinates;
 using GTiff2Tiles.Server.Models;
 using GTiff2Tiles.Server.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace GTiff2Tiles.Server.Pages.Catalogs;
 
+[Authorize]
 public sealed class MapModel(CatalogService catalogService) : PageModel
 {
     [BindProperty(SupportsGet = true)]

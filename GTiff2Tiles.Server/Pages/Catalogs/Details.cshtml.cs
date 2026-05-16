@@ -1,10 +1,12 @@
 using GTiff2Tiles.Server.Models;
 using GTiff2Tiles.Server.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace GTiff2Tiles.Server.Pages.Catalogs;
 
+[Authorize]
 public sealed class DetailsModel(CatalogService catalogService) : PageModel
 {
     [BindProperty(SupportsGet = true)]
@@ -78,6 +80,23 @@ public sealed class DetailsModel(CatalogService catalogService) : PageModel
         }
 
         Upload = new UploadGeoTiffInput();
+        Htmx.Trigger(Response, "image-updated");
+        return new EmptyResult();
+    }
+
+    public async Task<IActionResult> OnPostRemoveImageAsync(int imageId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await catalogService.RemoveImageAsync(Id, imageId, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            ModelState.AddModelError(string.Empty, exception.Message);
+            Catalog = await LoadCatalogAsync(cancellationToken).ConfigureAwait(false);
+            return Partial("_ImagePanel", Catalog);
+        }
+
         Htmx.Trigger(Response, "image-updated");
         return new EmptyResult();
     }
