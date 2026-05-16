@@ -153,6 +153,35 @@ app.MapGet(
     }
 );
 
+app.MapGet(
+    "/{catalogSlug}/images/{imageId:int}/thumbnail",
+    async (
+        string catalogSlug,
+        int imageId,
+        ServerDbContext dbContext,
+        TileRendererCache tileRendererCache,
+        CancellationToken cancellationToken
+    ) =>
+    {
+        CatalogImage? image = await dbContext.CatalogImages
+            .AsNoTracking()
+            .FirstOrDefaultAsync(i => i.Id == imageId && i.Catalog.Slug == catalogSlug, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (image is null || string.IsNullOrWhiteSpace(image.NormalizedPath))
+            return Results.NotFound();
+
+        byte[]? thumbnail = await Task.Run(
+            () => tileRendererCache.GenerateThumbnail(image.NormalizedPath),
+            cancellationToken
+        ).ConfigureAwait(false);
+
+        return thumbnail is null
+            ? Results.NotFound()
+            : Results.Stream(new MemoryStream(thumbnail, writable: false), "image/png", enableRangeProcessing: false);
+    }
+);
+
 app.MapStaticAssets();
 app.MapRazorPages().WithStaticAssets();
 

@@ -50,6 +50,18 @@ public sealed class TileRendererCache : IDisposable
         return composedTile;
     }
 
+    public byte[]? GenerateThumbnail(string normalizedPath, int maxWidth = 256)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(normalizedPath);
+
+        if (!File.Exists(normalizedPath))
+            return null;
+
+        using Image image = Image.NewFromFile(normalizedPath, access: NetVips.Enums.Access.Sequential);
+        using Image thumbnail = image.ThumbnailImage(maxWidth);
+        return thumbnail.WriteToBuffer(PngFormat);
+    }
+
     public void Dispose() => _cache.Dispose();
 
     private CachedTileRenderer GetOrCreateRenderer(string normalizedPath)
