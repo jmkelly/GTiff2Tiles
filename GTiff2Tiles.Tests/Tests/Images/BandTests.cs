@@ -161,6 +161,24 @@ public sealed class BandTests
     }
 
     [Test]
+    public void AddDefaultBandsReplacesOriginalImageInstance()
+    {
+        Image image = Image.Black(4, 4, 3);
+        Image original = image;
+
+        Band.AddDefaultBands(ref image, 4);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(image.Bands, Is.EqualTo(4));
+            Assert.That(ReferenceEquals(image, original), Is.False);
+            Assert.Throws<ObjectDisposedException>(() => _ = original.Width);
+        });
+
+        image.Dispose();
+    }
+
+    [Test]
     public void AddDefaultBandsNullImage()
     {
         Image image = null;

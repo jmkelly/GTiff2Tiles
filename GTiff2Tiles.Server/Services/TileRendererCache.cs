@@ -367,7 +367,7 @@ public sealed class TileRendererCache : IDisposable
             GTiff2Tiles.Core.Images.Band.AddDefaultBands(ref current, RasterTile.DefaultBandsCount);
 
             if (!layout.HasSameReadAndWriteSize &&
-                (source.Width != layout.WriteWidth || source.Height != layout.WriteHeight))
+                (current.Width != layout.WriteWidth || current.Height != layout.WriteHeight))
             {
                 Image resized = current.Resize(layout.XScale, NetVips.Enums.Kernel.Lanczos3, null, layout.YScale);
                 if (current != source) current.Dispose();
