@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GTiff2Tiles.Server.Services;
 
-public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slugGenerator, LocalFileStorage fileStorage)
+public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slugGenerator, IStorageFactory storageFactory)
 {
     public async Task<IReadOnlyList<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
     {
@@ -47,13 +47,14 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
             Name = input.Name.Trim(),
             Slug = slug,
             Description = string.IsNullOrWhiteSpace(input.Description) ? null : input.Description.Trim(),
+            StorageProvider = string.IsNullOrWhiteSpace(input.StorageProvider) ? "Local" : input.StorageProvider,
+            StorageConfig = input.StorageConfig,
             CreatedUtc = DateTimeOffset.UtcNow
         };
 
         dbContext.Catalogs.Add(catalog);
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        fileStorage.GetCatalogDirectory(catalog.Slug);
         return catalog;
     }
 
@@ -73,10 +74,11 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
         catalog.Name = input.Name.Trim();
         catalog.Slug = slug;
         catalog.Description = string.IsNullOrWhiteSpace(input.Description) ? null : input.Description.Trim();
+        catalog.StorageProvider = string.IsNullOrWhiteSpace(input.StorageProvider) ? "Local" : input.StorageProvider;
+        catalog.StorageConfig = input.StorageConfig;
 
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        fileStorage.GetCatalogDirectory(catalog.Slug);
         return catalog;
     }
 
@@ -163,8 +165,6 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
         if (image is null)
             throw new InvalidOperationException("The selected image does not belong to this catalog.");
 
-        string imageDirectory = fileStorage.GetImageDirectory(catalog.Slug, image.StorageKey);
-
         dbContext.CatalogImages.Remove(image);
 
         List<CatalogImage> remainingImages = catalog.Images
@@ -179,7 +179,8 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
 
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        TryDeleteDirectory(imageDirectory);
+        IStorage catalogStorage = storageFactory.GetStorage(catalog.StorageProvider, catalog.StorageConfig);
+        await catalogStorage.DeleteImageAsync(catalog.Slug, image.StorageKey, cancellationToken).ConfigureAwait(false);
 
         return await GetCatalogAsync(catalogId, cancellationToken).ConfigureAwait(false)
                ?? throw new InvalidOperationException("Catalog was not found after update.");
@@ -192,41 +193,64 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
                                          .ConfigureAwait(false)
                           ?? throw new InvalidOperationException("Catalog was not found.");
 
-        string catalogDirectory = fileStorage.GetCatalogDirectory(catalog.Slug);
+        string catalogSlug = catalog.Slug;
 
         dbContext.Catalogs.Remove(catalog);
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        TryDeleteDirectory(catalogDirectory);
+        IStorage catalogStorage = storageFactory.GetStorage(catalog.StorageProvider, catalog.StorageConfig);
+        await catalogStorage.DeleteCatalogAsync(catalogSlug, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<CatalogImage> UploadSingleImageAsync(Catalog catalog, IFormFile file, int sortOrder, CancellationToken cancellationToken)
     {
+        IStorage catalogStorage = storageFactory.GetStorage(catalog.StorageProvider, catalog.StorageConfig);
+
         string storageKey = Guid.NewGuid().ToString("N");
-        string originalPath = fileStorage.GetOriginalRasterPath(catalog.Slug, storageKey);
-        string normalizedPath = fileStorage.GetNormalizedRasterPath(catalog.Slug, storageKey);
+        string originalPath = catalogStorage.GetOriginalRasterPath(catalog.Slug, storageKey);
+        string normalizedPath = catalogStorage.GetNormalizedRasterPath(catalog.Slug, storageKey);
 
         await using (Stream uploadStream = file.OpenReadStream())
         {
-            await fileStorage.SaveUploadAsync(uploadStream, originalPath, cancellationToken).ConfigureAwait(false);
+            await catalogStorage.SaveUploadAsync(uploadStream, originalPath, cancellationToken).ConfigureAwait(false);
         }
+
+        string localNormalizedPath = null!;
 
         try
         {
-            bool isAlreadyNormalized = await GTiff2Tiles.Core.Helpers.CheckHelper.CheckInputFileAsync(originalPath, CoordinateSystem.Epsg3857)
-                                                                      .ConfigureAwait(false);
-
-            if (isAlreadyNormalized)
+            if (catalogStorage.Provider == "S3")
             {
-                File.Copy(originalPath, normalizedPath, overwrite: true);
+                string localWarpedPath = Path.GetTempFileName() + ".tif";
+                localNormalizedPath = Path.GetTempFileName() + ".tif";
+                catalogStorage.ConfigureGdal();
+                await GdalWorker.ConvertGeoTiffToTargetSystemAsync(originalPath, localWarpedPath, CoordinateSystem.Epsg3857)
+                                .ConfigureAwait(false);
+                await GdalWorker.CreateCogAsync(localWarpedPath, localNormalizedPath)
+                                .ConfigureAwait(false);
+                await using FileStream normalizedStream = File.OpenRead(localNormalizedPath);
+                await catalogStorage.SaveUploadAsync(normalizedStream, normalizedPath, cancellationToken).ConfigureAwait(false);
+
+                try { File.Delete(localWarpedPath); } catch { /* best effort */ }
             }
             else
             {
-                await GdalWorker.ConvertGeoTiffToTargetSystemAsync(originalPath, normalizedPath, CoordinateSystem.Epsg3857)
-                                .ConfigureAwait(false);
+                localNormalizedPath = normalizedPath;
+                bool isAlreadyNormalized = await GTiff2Tiles.Core.Helpers.CheckHelper.CheckInputFileAsync(originalPath, CoordinateSystem.Epsg3857)
+                                                                            .ConfigureAwait(false);
+
+                if (isAlreadyNormalized)
+                {
+                    File.Copy(originalPath, normalizedPath, overwrite: true);
+                }
+                else
+                {
+                    await GdalWorker.ConvertGeoTiffToTargetSystemAsync(originalPath, normalizedPath, CoordinateSystem.Epsg3857)
+                                    .ConfigureAwait(false);
+                }
             }
 
-            using Raster raster = new(normalizedPath, CoordinateSystem.Epsg3857);
+            using Raster raster = new(localNormalizedPath, CoordinateSystem.Epsg3857);
 
             CatalogImage image = new()
             {
@@ -246,7 +270,8 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
                 MinX = raster.MinCoordinate.X,
                 MinY = raster.MinCoordinate.Y,
                 MaxX = raster.MaxCoordinate.X,
-                MaxY = raster.MaxCoordinate.Y
+                MaxY = raster.MaxCoordinate.Y,
+                StorageProvider = catalogStorage.Provider
             };
 
             dbContext.CatalogImages.Add(image);
@@ -256,8 +281,15 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
         }
         catch
         {
-            TryDeleteDirectory(Path.GetDirectoryName(originalPath)!);
+            await catalogStorage.DeleteImageAsync(catalog.Slug, storageKey, cancellationToken).ConfigureAwait(false);
             throw;
+        }
+        finally
+        {
+            if (catalogStorage.Provider == "S3" && localNormalizedPath is not null && File.Exists(localNormalizedPath))
+            {
+                try { File.Delete(localNormalizedPath); } catch { /* best effort */ }
+            }
         }
     }
 
@@ -283,20 +315,5 @@ public sealed class CatalogService(ServerDbContext dbContext, SlugGenerator slug
         }
 
         return slug;
-    }
-
-    private static void TryDeleteDirectory(string path)
-    {
-        if (!Directory.Exists(path))
-            return;
-
-        try
-        {
-            Directory.Delete(path, recursive: true);
-        }
-        catch
-        {
-            // Best effort cleanup only.
-        }
     }
 }

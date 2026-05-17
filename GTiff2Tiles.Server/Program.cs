@@ -8,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection(StorageOptions.SectionName));
+builder.Services.Configure<LocalStorageOptions>(builder.Configuration.GetSection($"{StorageOptions.SectionName}:Local"));
+
 string dataRoot = Path.GetFullPath(
     Path.Combine(
         builder.Environment.ContentRootPath,
@@ -16,11 +19,7 @@ string dataRoot = Path.GetFullPath(
 );
 Directory.CreateDirectory(dataRoot);
 
-builder.Services.Configure<LocalStorageOptions>(options =>
-{
-    options.RootPath = dataRoot;
-    options.DatabasePath = Path.Combine(dataRoot, "server.db");
-});
+string databasePath = Path.Combine(dataRoot, "server.db");
 
 DatabaseOptions databaseOptions = builder.Configuration
     .GetSection(DatabaseOptions.SectionName)
@@ -35,14 +34,54 @@ builder.Services.AddDbContext<ServerDbContext>(
         }
         else
         {
-            LocalStorageOptions storageOptions = serviceProvider
-                .GetRequiredService<Microsoft.Extensions.Options.IOptions<LocalStorageOptions>>()
-                .Value;
-            Directory.CreateDirectory(Path.GetDirectoryName(storageOptions.DatabasePath)!);
-            options.UseSqlite($"Data Source={storageOptions.DatabasePath}");
+            Directory.CreateDirectory(Path.GetDirectoryName(databasePath)!);
+            options.UseSqlite($"Data Source={databasePath}");
         }
     }
 );
+
+// Read AppSettings from database to override configuration at runtime
+try
+{
+    string? connectionString = string.Equals(databaseOptions.Provider, "PostgreSQL", StringComparison.OrdinalIgnoreCase)
+        ? databaseOptions.ConnectionString
+        : $"Data Source={databasePath}";
+
+    DbContextOptionsBuilder<ServerDbContext> tempOptionsBuilder = new();
+    if (string.Equals(databaseOptions.Provider, "PostgreSQL", StringComparison.OrdinalIgnoreCase))
+        tempOptionsBuilder.UseNpgsql(connectionString);
+    else
+        tempOptionsBuilder.UseSqlite(connectionString);
+
+    using ServerDbContext tempContext = new(tempOptionsBuilder.Options);
+    if (tempContext.Database.CanConnect())
+    {
+        List<AppSetting> appSettings = tempContext.AppSettings.ToList();
+        if (appSettings.Count > 0)
+        {
+            Dictionary<string, string?> configOverrides = appSettings
+                .ToDictionary(setting => setting.Key, setting => (string?)setting.Value);
+            builder.Configuration.AddInMemoryCollection(configOverrides!);
+        }
+    }
+}
+catch
+{
+    // DB not yet created or schema not migrated -- use appsettings.json defaults
+}
+
+// Register storage services
+string provider = builder.Configuration[$"{StorageOptions.SectionName}:Provider"] ?? "Local";
+
+// Always configure both option types so the factory can resolve either
+builder.Services.Configure<S3StorageOptions>(builder.Configuration.GetSection($"{StorageOptions.SectionName}:S3"));
+builder.Services.Configure<LocalStorageOptions>(options =>
+{
+    options.RootPath = dataRoot;
+    options.DatabasePath = databasePath;
+});
+
+builder.Services.AddSingleton<IStorageFactory, StorageFactory>();
 
 long maxRequestBodySizeBytes =
     builder.Configuration.GetValue<long?>("Uploads:MaxRequestBodySizeBytes")
@@ -65,8 +104,8 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 .AddDefaultUI();
 
 builder.Services.AddSingleton<SlugGenerator>();
-builder.Services.AddSingleton<LocalFileStorage>();
 builder.Services.AddSingleton<TileRendererCache>();
+builder.Services.AddScoped<StoragePathResolver>();
 builder.Services.AddScoped<CatalogService>();
 builder.Services.AddScoped<TileService>();
 
@@ -91,7 +130,25 @@ using (IServiceScope scope = app.Services.CreateScope())
         dbContext.Database.Migrate();
     }
 
-    scope.ServiceProvider.GetRequiredService<LocalFileStorage>().EnsureStorageLayout();
+    // Configure GDAL for S3 if S3 credentials are configured (needed for /vsis3/ tile rendering)
+    S3StorageOptions s3Options = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<S3StorageOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(s3Options.AccessKeyId) && !string.IsNullOrWhiteSpace(s3Options.SecretAccessKey))
+    {
+        S3Storage.ConfigureGdal(s3Options);
+
+        S3Storage s3Storage = new(s3Options);
+        await s3Storage.EnsureBucketExistsAsync();
+        s3Storage.Dispose();
+    }
+
+    // Ensure local storage layout exists
+    LocalStorageOptions localOptions = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<LocalStorageOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(localOptions.RootPath))
+    {
+        Directory.CreateDirectory(localOptions.RootPath);
+        Directory.CreateDirectory(Path.Combine(localOptions.RootPath, "catalogs"));
+    }
+
     GTiff2Tiles.Core.GdalWorker.ConfigureGdal();
 
     AdminUserOptions adminUserOptions = app.Configuration
@@ -160,19 +217,32 @@ app.MapGet(
         int imageId,
         ServerDbContext dbContext,
         TileRendererCache tileRendererCache,
+        StoragePathResolver pathResolver,
         CancellationToken cancellationToken
     ) =>
     {
-        CatalogImage? image = await dbContext.CatalogImages
+        var imageData = await dbContext.CatalogImages
             .AsNoTracking()
-            .FirstOrDefaultAsync(i => i.Id == imageId && i.Catalog.Slug == catalogSlug, cancellationToken)
+            .Where(i => i.Id == imageId && i.Catalog.Slug == catalogSlug)
+            .Select(i => new
+            {
+                i.NormalizedPath,
+                i.StorageProvider,
+                CatalogSlug = i.Catalog.Slug,
+                i.Catalog.StorageConfig
+            })
+            .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        if (image is null || string.IsNullOrWhiteSpace(image.NormalizedPath))
+        if (imageData is null || string.IsNullOrWhiteSpace(imageData.NormalizedPath))
             return Results.NotFound();
 
+        PathResolutionResult resolutionResult = await pathResolver.ResolvePathAsync(
+            imageData.NormalizedPath, imageData.StorageProvider, imageData.CatalogSlug, imageData.StorageConfig)
+            .ConfigureAwait(false);
+
         byte[]? thumbnail = await Task.Run(
-            () => tileRendererCache.GenerateThumbnail(image.NormalizedPath),
+            () => tileRendererCache.GenerateThumbnail(resolutionResult.Path, s3Options: resolutionResult.S3Options),
             cancellationToken
         ).ConfigureAwait(false);
 

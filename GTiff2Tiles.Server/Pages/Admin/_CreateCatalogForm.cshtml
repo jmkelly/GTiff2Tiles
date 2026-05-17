@@ -1,4 +1,10 @@
+@using Microsoft.EntityFrameworkCore
 @model GTiff2Tiles.Server.Models.CreateCatalogInput
+@inject GTiff2Tiles.Server.Data.ServerDbContext DbContext
+
+@{
+    var presets = await DbContext.StoragePresets.AsNoTracking().OrderBy(p => p.Name).ToListAsync();
+}
 
 <form method="post" asp-page="/Admin/Catalogs/Create">
     <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
@@ -16,7 +22,100 @@
     <textarea asp-for="Description" rows="3" placeholder="Optional description for this catalog..."></textarea>
     <span asp-validation-for="Description" class="validation-message"></span>
 
+    <div class="divider"></div>
+
+    @if (presets.Count > 0)
+    {
+        <label for="preset-select">Load from storage preset</label>
+        <select id="preset-select">
+            <option value="">-- Manual configuration --</option>
+            @foreach (var preset in presets)
+            {
+                <option value="@preset.Id">@preset.Name (@preset.Provider)</option>
+            }
+        </select>
+        <span class="muted">Select a preset to auto-fill storage fields below. You can still override individual values.</span>
+
+        <div class="divider"></div>
+    }
+
+    <label asp-for="StorageProvider">Storage provider</label>
+    <select asp-for="StorageProvider" id="storage-provider-select">
+        <option value="Local">Local filesystem</option>
+        <option value="S3">S3-compatible storage</option>
+    </select>
+    <span asp-validation-for="StorageProvider" class="validation-message"></span>
+
+    <div id="local-config" class="storage-config-fields" style="display:none; margin-top:1rem;">
+        <label asp-for="StorageConfig!.Local!.RootPath">Root path</label>
+        <input asp-for="StorageConfig!.Local!.RootPath" id="local-root-path" placeholder="Leave blank to inherit global setting" />
+    </div>
+
+    <div id="s3-config" class="storage-config-fields" style="display:none; margin-top:1rem;">
+        <label asp-for="StorageConfig!.S3!.BucketName">Bucket name</label>
+        <input asp-for="StorageConfig!.S3!.BucketName" id="s3-bucket-name" placeholder="Leave blank to inherit global setting" />
+
+        <label asp-for="StorageConfig!.S3!.Region">Region</label>
+        <input asp-for="StorageConfig!.S3!.Region" id="s3-region" placeholder="e.g. us-east-1" />
+
+        <label asp-for="StorageConfig!.S3!.AccessKeyId">Access key ID</label>
+        <input asp-for="StorageConfig!.S3!.AccessKeyId" id="s3-access-key-id" />
+
+        <label asp-for="StorageConfig!.S3!.SecretAccessKey">Secret access key</label>
+        <input asp-for="StorageConfig!.S3!.SecretAccessKey" id="s3-secret-access-key" type="password" />
+
+        <label asp-for="StorageConfig!.S3!.EndpointUrl">Endpoint URL</label>
+        <input asp-for="StorageConfig!.S3!.EndpointUrl" id="s3-endpoint-url" placeholder="Optional, for S3-compatible services" />
+
+        <label asp-for="StorageConfig!.S3!.LocalCacheRoot">Local cache root</label>
+        <input asp-for="StorageConfig!.S3!.LocalCacheRoot" id="s3-local-cache-root" placeholder="Leave blank to use system temp directory" />
+    </div>
+
     <div style="margin-top: 1.5rem;">
         <button type="submit">Create catalog</button>
     </div>
 </form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var select = document.getElementById('storage-provider-select');
+        var localConfig = document.getElementById('local-config');
+        var s3Config = document.getElementById('s3-config');
+        var presetSelect = document.getElementById('preset-select');
+
+        function toggleConfig() {
+            localConfig.style.display = select.value === 'Local' ? 'block' : 'none';
+            s3Config.style.display = select.value === 'S3' ? 'block' : 'none';
+        }
+
+        select.addEventListener('change', toggleConfig);
+        toggleConfig();
+
+        if (presetSelect) {
+            presetSelect.addEventListener('change', function () {
+                var presetId = this.value;
+                if (!presetId) return;
+
+                fetch('/Admin/Catalogs/Create?handler=PresetJson&id=' + presetId)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        select.value = data.provider;
+                        toggleConfig();
+
+                        if (data.provider === 'Local' && data.local) {
+                            document.getElementById('local-root-path').value = data.local.rootPath || '';
+                        }
+
+                        if (data.provider === 'S3' && data.s3) {
+                            document.getElementById('s3-bucket-name').value = data.s3.bucketName || '';
+                            document.getElementById('s3-region').value = data.s3.region || '';
+                            document.getElementById('s3-access-key-id').value = data.s3.accessKeyId || '';
+                            document.getElementById('s3-secret-access-key').value = data.s3.secretAccessKey || '';
+                            document.getElementById('s3-endpoint-url').value = data.s3.endpointUrl || '';
+                            document.getElementById('s3-local-cache-root').value = data.s3.localCacheRoot || '';
+                        }
+                    });
+            });
+        }
+    });
+</script>

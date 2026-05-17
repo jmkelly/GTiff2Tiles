@@ -22,11 +22,11 @@ public sealed class CatalogImage
     public string? ContentType { get; set; }
 
     [Required]
-    [StringLength(1024)]
+    [StringLength(2048)]
     public string OriginalPath { get; set; } = string.Empty;
 
     [Required]
-    [StringLength(1024)]
+    [StringLength(2048)]
     public string NormalizedPath { get; set; } = string.Empty;
 
     public long OriginalFileSizeBytes { get; set; }
@@ -50,4 +50,8 @@ public sealed class CatalogImage
     public double MaxX { get; set; }
 
     public double MaxY { get; set; }
+
+    [Required]
+    [StringLength(32)]
+    public string StorageProvider { get; set; } = "Local";
 }

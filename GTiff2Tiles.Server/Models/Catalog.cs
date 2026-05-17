@@ -20,6 +20,12 @@ public sealed class Catalog
 
     public DateTimeOffset CreatedUtc { get; set; } = DateTimeOffset.UtcNow;
 
+    [Required]
+    [StringLength(32)]
+    public string StorageProvider { get; set; } = "Local";
+
+    public CatalogStorageConfig? StorageConfig { get; set; }
+
     [NotMapped]
     public int ImageCount { get; set; }
 

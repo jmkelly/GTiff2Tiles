@@ -1,14 +1,24 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using GTiff2Tiles.Server.Data;
 using GTiff2Tiles.Server.Models;
 using GTiff2Tiles.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace GTiff2Tiles.Server.Pages.Admin.Catalogs;
 
 [Authorize]
-public sealed class DetailsModel(CatalogService catalogService) : PageModel
+public sealed class DetailsModel(CatalogService catalogService, ServerDbContext dbContext) : PageModel
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
     [BindProperty(SupportsGet = true)]
     public int Id { get; set; }
 
@@ -118,13 +128,44 @@ public sealed class DetailsModel(CatalogService catalogService) : PageModel
         return new EmptyResult();
     }
 
+    public async Task<IActionResult> OnGetPresetJsonAsync(int presetId, CancellationToken cancellationToken)
+    {
+        StoragePreset? preset = await dbContext.StoragePresets
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == presetId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (preset is null)
+            return NotFound();
+
+        return Content(JsonSerializer.Serialize(new
+        {
+            provider = preset.Provider,
+            local = preset.Provider == "Local" ? new
+            {
+                rootPath = preset.LocalRootPath
+            } : null,
+            s3 = preset.Provider == "S3" ? new
+            {
+                bucketName = preset.S3BucketName,
+                region = preset.S3Region,
+                accessKeyId = preset.S3AccessKeyId,
+                secretAccessKey = preset.S3SecretAccessKey,
+                endpointUrl = preset.S3EndpointUrl,
+                localCacheRoot = preset.S3LocalCacheRoot
+            } : null
+        }, JsonOptions), "application/json");
+    }
+
     private void PopulateUpdateCatalog(Catalog catalog)
     {
         UpdateCatalog = new UpdateCatalogInput
         {
             Name = catalog.Name,
             Slug = catalog.Slug,
-            Description = catalog.Description
+            Description = catalog.Description,
+            StorageProvider = catalog.StorageProvider,
+            StorageConfig = catalog.StorageConfig
         };
     }
 

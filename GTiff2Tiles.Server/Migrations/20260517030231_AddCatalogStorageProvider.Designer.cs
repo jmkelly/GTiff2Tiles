@@ -3,6 +3,7 @@ using System;
 using GTiff2Tiles.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GTiff2Tiles.Server.Migrations
 {
     [DbContext(typeof(ServerDbContext))]
-    partial class ServerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260517030231_AddCatalogStorageProvider")]
+    partial class AddCatalogStorageProvider
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
@@ -213,58 +216,6 @@ namespace GTiff2Tiles.Server.Migrations
                     b.ToTable("CatalogImages");
                 });
 
-            modelBuilder.Entity("GTiff2Tiles.Server.Models.StoragePreset", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("LocalRootPath")
-                        .HasMaxLength(1024)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Provider")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("S3AccessKeyId")
-                        .HasMaxLength(256)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("S3BucketName")
-                        .HasMaxLength(512)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("S3EndpointUrl")
-                        .HasMaxLength(512)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("S3LocalCacheRoot")
-                        .HasMaxLength(1024)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("S3Region")
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("S3SecretAccessKey")
-                        .HasMaxLength(256)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("StoragePresets");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -395,67 +346,6 @@ namespace GTiff2Tiles.Server.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
-                });
-
-            modelBuilder.Entity("GTiff2Tiles.Server.Models.Catalog", b =>
-                {
-                    b.OwnsOne("GTiff2Tiles.Server.Models.CatalogStorageConfig", "StorageConfig", b1 =>
-                        {
-                            b1.Property<int>("CatalogId");
-
-                            b1.HasKey("CatalogId");
-
-                            b1.ToTable("Catalogs");
-
-                            b1.ToJson("StorageConfig");
-
-                            b1.WithOwner()
-                                .HasForeignKey("CatalogId");
-
-                            b1.OwnsOne("GTiff2Tiles.Server.Models.LocalStorageConfig", "Local", b2 =>
-                                {
-                                    b2.Property<int>("CatalogStorageConfigCatalogId");
-
-                                    b2.Property<string>("RootPath");
-
-                                    b2.HasKey("CatalogStorageConfigCatalogId");
-
-                                    b2.ToTable("Catalogs");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("CatalogStorageConfigCatalogId");
-                                });
-
-                            b1.OwnsOne("GTiff2Tiles.Server.Models.S3StorageConfig", "S3", b2 =>
-                                {
-                                    b2.Property<int>("CatalogStorageConfigCatalogId");
-
-                                    b2.Property<string>("AccessKeyId");
-
-                                    b2.Property<string>("BucketName");
-
-                                    b2.Property<string>("EndpointUrl");
-
-                                    b2.Property<string>("LocalCacheRoot");
-
-                                    b2.Property<string>("Region");
-
-                                    b2.Property<string>("SecretAccessKey");
-
-                                    b2.HasKey("CatalogStorageConfigCatalogId");
-
-                                    b2.ToTable("Catalogs");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("CatalogStorageConfigCatalogId");
-                                });
-
-                            b1.Navigation("Local");
-
-                            b1.Navigation("S3");
-                        });
-
-                    b.Navigation("StorageConfig");
                 });
 
             modelBuilder.Entity("GTiff2Tiles.Server.Models.CatalogImage", b =>

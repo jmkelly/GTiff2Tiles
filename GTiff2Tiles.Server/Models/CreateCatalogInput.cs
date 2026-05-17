@@ -13,4 +13,10 @@ public sealed class CreateCatalogInput
 
     [StringLength(512)]
     public string? Description { get; set; }
+
+    [Required]
+    [StringLength(32)]
+    public string StorageProvider { get; set; } = "Local";
+
+    public CatalogStorageConfig? StorageConfig { get; set; }
 }

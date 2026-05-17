@@ -1,0 +1,149 @@
+@page
+@model GTiff2Tiles.Server.Pages.Admin.SettingsModel
+@{
+    ViewData["Title"] = "Storage Settings";
+}
+
+<a class="back-link" asp-page="/Admin/Index">Back to dashboard</a>
+
+<div class="coord-bar">
+    <span>Settings</span>
+    <span>&mdash;</span>
+    <span>Storage Configuration</span>
+</div>
+
+<section class="card single-card">
+    <div class="section-heading">
+        <div>
+            <h1>Storage settings</h1>
+            <p class="muted">Configure which storage backend to use for GeoTIFF files.</p>
+        </div>
+    </div>
+
+    <div class="section-heading" style="margin-bottom: 0;">
+        <div>
+            <p class="muted" style="margin: 0;">Named profiles allow catalogs to be pre-configured with a complete storage setup. <a asp-page="/Admin/StoragePresets/Index">Manage storage presets &rarr;</a></p>
+        </div>
+    </div>
+
+    @if (Model.Presets.Count > 0)
+    {
+        <div class="catalog-list" style="margin-bottom: 0;">
+            @foreach (var preset in Model.Presets)
+            {
+                <article class="catalog-item">
+                    <div>
+                        <h3>@preset.Name</h3>
+                        <p style="margin-bottom: 0.25rem;">
+                            Provider: <strong>@preset.Provider</strong>
+                        </p>
+                        @if (preset.Provider == "Local" && !string.IsNullOrWhiteSpace(preset.LocalRootPath))
+                        {
+                            <p class="muted" style="margin-bottom: 0;">Root path: <code>@preset.LocalRootPath</code></p>
+                        }
+                        @if (preset.Provider == "S3")
+                        {
+                            <p class="muted" style="margin-bottom: 0;">
+                                Bucket: <code>@preset.S3BucketName</code>
+                                @if (!string.IsNullOrWhiteSpace(preset.S3EndpointUrl))
+                                {
+                                    <span>&middot; Endpoint: <code>@preset.S3EndpointUrl</code></span>
+                                }
+                            </p>
+                        }
+                    </div>
+                    <div class="catalog-actions">
+                        <a class="button-link secondary" asp-page="/Admin/StoragePresets/Edit" asp-route-id="@preset.Id">Edit</a>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+    else
+    {
+        <p class="muted" style="text-align: center; padding: 1rem 0; margin: 0;">No storage presets defined yet.</p>
+    }
+
+    <div class="divider"></div>
+
+    <form method="post" class="stacked-section">
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <label asp-for="Input.Provider">Storage provider</label>
+        <select asp-for="Input.Provider"
+                onchange="toggleStorageFields(this.value)">
+            <option value="Local">Local filesystem</option>
+            <option value="S3">S3-compatible storage</option>
+        </select>
+        <span asp-validation-for="Input.Provider" class="validation-message"></span>
+
+        <div id="local-fields" class="storage-fields">
+            <div class="divider"></div>
+            <h3>Local storage options</h3>
+
+            <label asp-for="Input.Local.RootPath">Root directory</label>
+            <input asp-for="Input.Local.RootPath" />
+            <span asp-validation-for="Input.Local.RootPath" class="validation-message"></span>
+        </div>
+
+        <div id="s3-fields" class="storage-fields" style="display: none;">
+            <div class="divider"></div>
+            <h3>S3 storage options</h3>
+
+            <label asp-for="Input.S3.BucketName">Bucket name</label>
+            <input asp-for="Input.S3.BucketName" />
+            <span asp-validation-for="Input.S3.BucketName" class="validation-message"></span>
+
+            <label asp-for="Input.S3.Region">Region</label>
+            <input asp-for="Input.S3.Region" />
+            <span asp-validation-for="Input.S3.Region" class="validation-message"></span>
+
+            <label asp-for="Input.S3.AccessKeyId">Access key ID</label>
+            <input asp-for="Input.S3.AccessKeyId" />
+            <span asp-validation-for="Input.S3.AccessKeyId" class="validation-message"></span>
+
+            <label asp-for="Input.S3.SecretAccessKey">Secret access key</label>
+            <input asp-for="Input.S3.SecretAccessKey" type="password" />
+            <span asp-validation-for="Input.S3.SecretAccessKey" class="validation-message"></span>
+
+            <label asp-for="Input.S3.EndpointUrl">Endpoint URL (optional, for S3-compatible storage)</label>
+            <input asp-for="Input.S3.EndpointUrl" placeholder="https://play.min.io" />
+            <span class="muted">Leave empty to use AWS default endpoint.</span>
+            <span asp-validation-for="Input.S3.EndpointUrl" class="validation-message"></span>
+
+            <label asp-for="Input.S3.LocalCacheRoot">Local cache directory (optional)</label>
+            <input asp-for="Input.S3.LocalCacheRoot" />
+            <span class="muted">Directory for caching remote GeoTIFFs for tile serving. Defaults to system temp.</span>
+            <span asp-validation-for="Input.S3.LocalCacheRoot" class="validation-message"></span>
+
+            <div style="margin-top: 1rem;">
+                <button type="submit" asp-page-handler="TestConnection" class="button-link secondary">Test connection</button>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+        <div style="margin-top: 1.25rem;">
+            <button type="submit">Save settings</button>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.StatusMessage))
+        {
+            <div class="status-message @(Model.StatusIsError ? "error" : "success")" style="margin-top: 1rem;">
+                @Model.StatusMessage
+            </div>
+        }
+    </form>
+</section>
+
+<script>
+    function toggleStorageFields(provider) {
+        document.getElementById('local-fields').style.display = provider === 'Local' ? '' : 'none';
+        document.getElementById('s3-fields').style.display = provider === 'S3' ? '' : 'none';
+    }
+
+    // Set initial state
+    document.addEventListener('DOMContentLoaded', function() {
+        const select = document.querySelector('select[name="Input.Provider"]');
+        if (select) toggleStorageFields(select.value);
+    });
+</script>

@@ -1,4 +1,6 @@
 @page "{id:int}"
+@using Microsoft.EntityFrameworkCore
+@inject GTiff2Tiles.Server.Data.ServerDbContext DbContext
 @model GTiff2Tiles.Server.Pages.Admin.Catalogs.DetailsModel
 @{
     ViewData["Title"] = Model.Catalog.Name;
@@ -47,6 +49,68 @@
             <textarea asp-for="UpdateCatalog.Description" rows="3"></textarea>
             <span asp-validation-for="UpdateCatalog.Description" class="validation-message"></span>
 
+            <div class="divider"></div>
+
+            @{
+                var editPresets = await DbContext.StoragePresets.AsNoTracking().OrderBy(p => p.Name).ToListAsync();
+            }
+            @if (editPresets.Count > 0)
+            {
+                <label for="edit-preset-select">Storage preset</label>
+                <select id="edit-preset-select" required>
+                    <option value="">-- Select a storage preset --</option>
+                    @foreach (var preset in editPresets)
+                    {
+                        <option value="@preset.Id">@preset.Name (@preset.Provider)</option>
+                    }
+                </select>
+                <span class="muted">The storage provider and configuration are determined by the selected preset. Individual fields can still be overridden below.</span>
+
+                <div class="divider"></div>
+            }
+            else
+            {
+                <p class="muted">No storage presets configured. Create one from the settings page to configure storage.</p>
+            }
+
+            <input type="hidden" asp-for="UpdateCatalog.StorageProvider" id="edit-storage-provider-hidden" />
+            <div class="field-group">
+                <label>Storage provider</label>
+                <p id="edit-provider-display" style="margin: 0.25rem 0; min-height: 1.5rem;">
+                    @(Model.Catalog.StorageProvider switch
+                    {
+                        "Local" => "Local filesystem",
+                        "S3" => "S3-compatible storage",
+                        _ => Model.Catalog.StorageProvider
+                    })
+                </p>
+            </div>
+
+            <div id="edit-local-config" class="storage-config-fields" style="display:none; margin-top:1rem;">
+                <label asp-for="UpdateCatalog.StorageConfig!.Local!.RootPath">Root path</label>
+                <input asp-for="UpdateCatalog.StorageConfig!.Local!.RootPath" id="edit-local-root-path" placeholder="Leave blank to inherit global setting" />
+            </div>
+
+            <div id="edit-s3-config" class="storage-config-fields" style="display:none; margin-top:1rem;">
+                <label asp-for="UpdateCatalog.StorageConfig!.S3!.BucketName">Bucket name</label>
+                <input asp-for="UpdateCatalog.StorageConfig!.S3!.BucketName" id="edit-s3-bucket-name" placeholder="Leave blank to inherit global setting" />
+
+                <label asp-for="UpdateCatalog.StorageConfig!.S3!.Region">Region</label>
+                <input asp-for="UpdateCatalog.StorageConfig!.S3!.Region" id="edit-s3-region" placeholder="e.g. us-east-1" />
+
+                <label asp-for="UpdateCatalog.StorageConfig!.S3!.AccessKeyId">Access key ID</label>
+                <input asp-for="UpdateCatalog.StorageConfig!.S3!.AccessKeyId" id="edit-s3-access-key-id" />
+
+                <label asp-for="UpdateCatalog.StorageConfig!.S3!.SecretAccessKey">Secret access key</label>
+                <input asp-for="UpdateCatalog.StorageConfig!.S3!.SecretAccessKey" id="edit-s3-secret-access-key" type="password" />
+
+                <label asp-for="UpdateCatalog.StorageConfig!.S3!.EndpointUrl">Endpoint URL</label>
+                <input asp-for="UpdateCatalog.StorageConfig!.S3!.EndpointUrl" id="edit-s3-endpoint-url" placeholder="Optional, for S3-compatible services" />
+
+                <label asp-for="UpdateCatalog.StorageConfig!.S3!.LocalCacheRoot">Local cache root</label>
+                <input asp-for="UpdateCatalog.StorageConfig!.S3!.LocalCacheRoot" id="edit-s3-local-cache-root" placeholder="Leave blank to use system temp directory" />
+            </div>
+
             <div style="margin-top: 1.25rem;">
                 <button type="submit">Save catalog details</button>
             </div>
@@ -76,3 +140,69 @@
         </div>
     </section>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var hiddenInput = document.getElementById('edit-storage-provider-hidden');
+            var providerDisplay = document.getElementById('edit-provider-display');
+            var localConfig = document.getElementById('edit-local-config');
+            var s3Config = document.getElementById('edit-s3-config');
+            var presetSelect = document.getElementById('edit-preset-select');
+
+            function toggleConfig(provider) {
+                localConfig.style.display = provider === 'Local' ? 'block' : 'none';
+                s3Config.style.display = provider === 'S3' ? 'block' : 'none';
+            }
+
+            if (hiddenInput && providerDisplay) {
+                toggleConfig(hiddenInput.value);
+            }
+
+            if (presetSelect) {
+                var presetUrl = '@Url.Page("/Admin/Catalogs/Details", "PresetJson", new { id = Model.Id })';
+
+                presetSelect.addEventListener('change', function () {
+                    var presetId = this.value;
+                    if (!presetId) return;
+
+                    fetch(presetUrl + '&presetId=' + presetId)
+                        .then(function (r) {
+                            if (!r.ok) throw new Error('Failed to load preset');
+                            return r.json();
+                        })
+                        .then(function (data) {
+                            hiddenInput.value = data.provider;
+
+                            if (data.provider === 'Local') {
+                                providerDisplay.textContent = 'Local filesystem';
+                            } else if (data.provider === 'S3') {
+                                providerDisplay.textContent = 'S3-compatible storage';
+                            } else {
+                                providerDisplay.textContent = data.provider;
+                            }
+
+                            toggleConfig(data.provider);
+
+                            if (data.provider === 'Local' && data.local) {
+                                document.getElementById('edit-local-root-path').value = data.local.rootPath || '';
+                            }
+
+                            if (data.provider === 'S3' && data.s3) {
+                                document.getElementById('edit-s3-bucket-name').value = data.s3.bucketName || '';
+                                document.getElementById('edit-s3-region').value = data.s3.region || '';
+                                document.getElementById('edit-s3-access-key-id').value = data.s3.accessKeyId || '';
+                                document.getElementById('edit-s3-secret-access-key').value = data.s3.secretAccessKey || '';
+                                document.getElementById('edit-s3-endpoint-url').value = data.s3.endpointUrl || '';
+                                document.getElementById('edit-s3-local-cache-root').value = data.s3.localCacheRoot || '';
+                            }
+                        })
+                        .catch(function (err) {
+                            console.error('Error loading preset:', err);
+                        });
+                });
+            }
+        });
+    </script>
+}
