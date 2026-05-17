@@ -1,0 +1,93 @@
+@page "{id:int}"
+@model GTiff2Tiles.Server.Pages.Admin.StoragePresets.EditModel
+@{
+    ViewData["Title"] = "Edit storage preset";
+}
+
+<a class="back-link" asp-page="/Admin/StoragePresets/Index">Back to presets</a>
+
+<div class="coord-bar">
+    <span>Settings</span>
+    <span>&mdash;</span>
+    <span>Edit Preset</span>
+</div>
+
+<section class="card single-card create-card">
+    <div class="section-heading">
+        <div>
+            <h1>Edit storage preset</h1>
+            <p class="muted">Update the storage profile. Changes will apply to catalogs that use this preset when they are next edited.</p>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <form method="post" class="stacked-section">
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <label asp-for="Input.Name">Preset name</label>
+        <input asp-for="Input.Name" />
+        <span asp-validation-for="Input.Name" class="validation-message"></span>
+
+        <label asp-for="Input.Provider">Storage provider</label>
+        <select asp-for="Input.Provider" id="preset-provider-select">
+            <option value="Local">Local filesystem</option>
+            <option value="S3">S3-compatible storage</option>
+        </select>
+        <span asp-validation-for="Input.Provider" class="validation-message"></span>
+
+        <div id="preset-local-config" class="storage-config-fields" style="display:none; margin-top:1rem;">
+            <div class="divider"></div>
+            <h3>Local storage options</h3>
+
+            <label asp-for="Input.LocalRootPath">Root path</label>
+            <input asp-for="Input.LocalRootPath" />
+        </div>
+
+        <div id="preset-s3-config" class="storage-config-fields" style="display:none; margin-top:1rem;">
+            <div class="divider"></div>
+            <h3>S3 storage options</h3>
+
+            <label asp-for="Input.S3BucketName">Bucket name</label>
+            <input asp-for="Input.S3BucketName" />
+
+            <label asp-for="Input.S3Region">Region</label>
+            <input asp-for="Input.S3Region" />
+
+            <label asp-for="Input.S3AccessKeyId">Access key ID</label>
+            <input asp-for="Input.S3AccessKeyId" />
+
+            <label asp-for="Input.S3SecretAccessKey">Secret access key</label>
+            <input asp-for="Input.S3SecretAccessKey" type="password" />
+
+            <label asp-for="Input.S3EndpointUrl">Endpoint URL</label>
+            <input asp-for="Input.S3EndpointUrl" placeholder="Optional, for S3-compatible services" />
+
+            <label asp-for="Input.S3LocalCacheRoot">Local cache root</label>
+            <input asp-for="Input.S3LocalCacheRoot" placeholder="Leave blank to use system temp directory" />
+        </div>
+
+        <div style="margin-top: 1.5rem;">
+            <button type="submit">Save preset</button>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var select = document.getElementById('preset-provider-select');
+            var localConfig = document.getElementById('preset-local-config');
+            var s3Config = document.getElementById('preset-s3-config');
+
+            function toggleConfig() {
+                localConfig.style.display = select.value === 'Local' ? 'block' : 'none';
+                s3Config.style.display = select.value === 'S3' ? 'block' : 'none';
+            }
+
+            select.addEventListener('change', toggleConfig);
+            toggleConfig();
+        });
+    </script>
+}

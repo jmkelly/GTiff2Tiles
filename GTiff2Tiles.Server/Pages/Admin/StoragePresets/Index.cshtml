@@ -1,0 +1,71 @@
+@page
+@model GTiff2Tiles.Server.Pages.Admin.StoragePresets.IndexModel
+@{
+    ViewData["Title"] = "Storage Presets";
+}
+
+<a class="back-link" asp-page="/Admin/Settings">Back to settings</a>
+
+<div class="coord-bar">
+    <span>Settings</span>
+    <span>&mdash;</span>
+    <span>Storage Presets</span>
+</div>
+
+<section class="card single-card">
+    <div class="section-heading">
+        <div>
+            <h1>Storage presets</h1>
+            <p class="muted">Named storage profiles that can be selected when creating or editing a catalog. Each preset defines a complete storage configuration.</p>
+        </div>
+
+        <a class="button-link" asp-page="/Admin/StoragePresets/Create">+ New preset</a>
+    </div>
+
+    <div class="divider"></div>
+
+    @if (Model.Presets.Count == 0)
+    {
+        <p class="muted" style="text-align: center; padding: 2rem 0;">No storage presets defined yet. Create one to quickly configure catalogs.</p>
+    }
+    else
+    {
+        <div class="catalog-list">
+            @foreach (var preset in Model.Presets)
+            {
+                <article class="catalog-item">
+                    <div>
+                        <h3>@preset.Name</h3>
+                        <p style="margin-bottom: 0.25rem;">
+                            Provider: <strong>@preset.Provider</strong>
+                        </p>
+                        @if (preset.Provider == "Local" && !string.IsNullOrWhiteSpace(preset.LocalRootPath))
+                        {
+                            <p class="muted" style="margin-bottom: 0;">Root path: <code>@preset.LocalRootPath</code></p>
+                        }
+                        @if (preset.Provider == "S3")
+                        {
+                            <p class="muted" style="margin-bottom: 0;">
+                                Bucket: <code>@preset.S3BucketName</code>
+                                @if (!string.IsNullOrWhiteSpace(preset.S3EndpointUrl))
+                                {
+                                    <span>&middot; Endpoint: <code>@preset.S3EndpointUrl</code></span>
+                                }
+                            </p>
+                        }
+                    </div>
+                    <div class="catalog-actions">
+                        <a class="button-link secondary" asp-page="/Admin/StoragePresets/Edit" asp-route-id="@preset.Id">Edit</a>
+                        <form hx-post="@Url.Page("/Admin/StoragePresets/Index", "Delete", new { id = preset.Id })"
+                              hx-target="closest article"
+                              hx-swap="outerHTML"
+                              onsubmit="return confirm('Delete preset &ldquo;@preset.Name&rdquo;?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="button-link danger">Delete</button>
+                        </form>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</section>
