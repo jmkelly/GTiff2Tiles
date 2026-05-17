@@ -49,7 +49,10 @@ public static class CheckHelper
         }
 
         // Check file's existance
-        bool existance = File.Exists(filePath);
+        // Paths starting with /vsis3/ are GDAL virtual filesystem paths;
+        // File.Exists() cannot resolve them, so skip existence check.
+        bool isVsis3Path = filePath.StartsWith("/vsis3/", StringComparison.OrdinalIgnoreCase);
+        bool existance = isVsis3Path || File.Exists(filePath);
 
         switch (shouldExist)
         {

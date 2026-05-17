@@ -808,7 +808,12 @@
             Options for GdalWarp to convert GeoTiff's coordinate system;
             <remarks><para/>Requires you to add target system param (-t_srs).
             Included default args: <code>-overwrite -multi -srcnodata 0
-            -of GTiff -ot Byte</code></remarks>
+            -of GTiff</code></remarks>
+            </summary>
+        </member>
+        <member name="F:GTiff2Tiles.Core.GdalWorker.CreateCogOptions">
+            <summary>
+            Options for GDAL Translate to emit a Cloud Optimized GeoTIFF.
             </summary>
         </member>
         <member name="F:GTiff2Tiles.Core.GdalWorker.TempFileName">
@@ -840,6 +845,11 @@
             <remarks><para/><see langword="null"/> by default</remarks></param>
             <returns><see cref="T:System.String"/> from GdalInfo if everything OK;
             <para/><see langword="null"/> otherwise</returns>
+        </member>
+        <member name="M:GTiff2Tiles.Core.GdalWorker.TranslateAsync(System.String,System.String,System.String[],System.IProgress{System.Double})">
+            <summary>
+            Runs GDAL Translate with passed parameters.
+            </summary>
         </member>
         <member name="M:GTiff2Tiles.Core.GdalWorker.ConfigureGdal">
             <summary>
@@ -879,6 +889,11 @@
             <param name="progress">GdalWarp's progress
             <remarks><para/><see langword="null"/> by default</remarks></param>
             <exception cref="T:System.NotSupportedException"/>
+        </member>
+        <member name="M:GTiff2Tiles.Core.GdalWorker.CreateCogAsync(System.String,System.String,System.IProgress{System.Double})">
+            <summary>
+            Creates a Cloud Optimized GeoTIFF from an existing GeoTIFF.
+            </summary>
         </member>
         <member name="M:GTiff2Tiles.Core.GdalWorker.GetCoordinateSystem(System.String)">
             <summary>

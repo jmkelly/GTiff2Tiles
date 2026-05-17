@@ -66,13 +66,28 @@ public static class GdalWorker
     /// Options for GdalWarp to convert GeoTiff's coordinate system;
     /// <remarks><para/>Requires you to add target system param (-t_srs).
     /// Included default args: <code>-overwrite -multi -srcnodata 0
-    /// -of GTiff -ot Byte</code></remarks>
+    /// -of GTiff</code></remarks>
     /// </summary>
     public static readonly string[] ConvertCoordinateSystemOptions =
     {
-        "-overwrite", "-multi", "-srcnodata", "0", "-of", "GTiff", "-ot", "Byte"
-        // TODO: test performance with TILED
-        //"-co", "TILED=YES",
+        "-overwrite", "-multi", "-srcnodata", "0", "-of", "GTiff",
+        "-co", "TILED=YES",
+    };
+
+    /// <summary>
+    /// Options for GDAL Translate to emit a Cloud Optimized GeoTIFF.
+    /// </summary>
+    public static readonly string[] CreateCogOptions =
+    {
+        "-of", "COG",
+        "-co", "BLOCKSIZE=512",
+        "-co", "COMPRESS=ZSTD",
+        "-co", "LEVEL=9",
+        "-co", "PREDICTOR=YES",
+        "-co", "OVERVIEWS=AUTO",
+        "-co", "OVERVIEW_RESAMPLING=LANCZOS",
+        "-co", "RESAMPLING=LANCZOS",
+        "-co", "BIGTIFF=IF_SAFER",
     };
 
     /// <summary>
@@ -121,7 +136,8 @@ public static class GdalWorker
 
         return Task.Run(() =>
         {
-            using Dataset inputDataset = Gdal.Open(inputFilePath, Access.GA_ReadOnly);
+            using Dataset inputDataset = Gdal.Open(inputFilePath, Access.GA_ReadOnly)
+                ?? throw new FileNotFoundException($"Input file not found: {inputFilePath}");
 
             using Dataset resultDataset = Gdal.Warp(outputFilePath, new[] { inputDataset },
                                                     new GDALWarpAppOptions(options), callback, string.Empty);
@@ -152,6 +168,38 @@ public static class GdalWorker
             using Dataset inputDataset = Gdal.Open(inputFilePath, Access.GA_ReadOnly);
 
             return Gdal.GDALInfo(inputDataset, new GDALInfoOptions(options));
+        });
+    }
+
+    /// <summary>
+    /// Runs GDAL Translate with passed parameters.
+    /// </summary>
+    public static Task TranslateAsync(string inputFilePath, string outputFilePath,
+                                      string[] options, IProgress<double> progress = null)
+    {
+        CheckHelper.CheckFile(inputFilePath);
+        CheckHelper.CheckFile(outputFilePath, false);
+        CheckHelper.CheckDirectory(Path.GetDirectoryName(outputFilePath));
+
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.Length <= 0) throw new ArgumentException(null, nameof(options));
+
+        Gdal.GDALProgressFuncDelegate callback = GdalProgress;
+        _gdalProgress = progress;
+
+        ConfigureGdal();
+
+        return Task.Run(() =>
+        {
+            using Dataset inputDataset = Gdal.Open(inputFilePath, Access.GA_ReadOnly)
+                ?? throw new FileNotFoundException($"Input file not found: {inputFilePath}");
+
+            using Dataset resultDataset = Gdal.wrapper_GDALTranslate(
+                outputFilePath,
+                inputDataset,
+                new GDALTranslateOptions(options),
+                callback,
+                string.Empty);
         });
     }
 
@@ -305,6 +353,12 @@ public static class GdalWorker
     }
 
     /// <summary>
+    /// Creates a Cloud Optimized GeoTIFF from an existing GeoTIFF.
+    /// </summary>
+    public static Task CreateCogAsync(string inputFilePath, string outputFilePath, IProgress<double> progress = null)
+        => TranslateAsync(inputFilePath, outputFilePath, CreateCogOptions, progress);
+
+    /// <summary>
     /// Gets supported coordinate system from proj string of GeoTiff
     /// </summary>
     /// <param name="projString">Proj string of input GeoTiff</param>
@@ -395,7 +449,7 @@ public static class GdalWorker
         ArgumentNullException.ThrowIfNull(size);
 
         double minX = geoTransform[0];
-        double minY = geoTransform[3] - size.Height * geoTransform[1];
+        double minY = geoTransform[3] + size.Height * geoTransform[5];
         double maxX = geoTransform[0] + size.Width * geoTransform[1];
         double maxY = geoTransform[3];
 
