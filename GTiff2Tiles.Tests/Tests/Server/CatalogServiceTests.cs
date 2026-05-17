@@ -16,7 +16,7 @@ public sealed class CatalogServiceTests
 {
     private string _tempRoot = null!;
     private ServerDbContext _dbContext = null!;
-    private LocalFileStorage _fileStorage = null!;
+    private IStorageFactory _storageFactory = null!;
     private CatalogService _catalogService = null!;
 
     [SetUp]
@@ -28,14 +28,20 @@ public sealed class CatalogServiceTests
         _dbContext = CreateDbContext();
         _dbContext.Database.EnsureCreated();
 
-        _fileStorage = new LocalFileStorage(Options.Create(new LocalStorageOptions
+        LocalStorageOptions localOptions = new()
         {
             RootPath = _tempRoot,
             DatabasePath = Path.Combine(_tempRoot, "test.db")
-        }));
-        _fileStorage.EnsureStorageLayout();
+        };
+        _storageFactory = new StorageFactory(
+            Options.Create(new S3StorageOptions()),
+            Options.Create(localOptions));
 
-        _catalogService = new CatalogService(_dbContext, new SlugGenerator(), _fileStorage);
+        IStorage fileStorage = _storageFactory.GetStorage("Local");
+        Directory.CreateDirectory(localOptions.RootPath);
+        Directory.CreateDirectory(Path.Combine(localOptions.RootPath, "catalogs"));
+
+        _catalogService = new CatalogService(_dbContext, new SlugGenerator(), _storageFactory);
     }
 
     [TearDown]
@@ -112,7 +118,7 @@ public sealed class CatalogServiceTests
 
         Catalog reloadedCatalog = await _catalogService.GetCatalogAsync(catalog.Id, CancellationToken.None)
                                                        ?? throw new AssertionException("Catalog should exist.");
-        string catalogDirectory = _fileStorage.GetCatalogDirectory(catalog.Slug);
+        string catalogDirectory = Path.Combine(_tempRoot, "catalogs", catalog.Slug);
 
         Assert.Multiple(() =>
         {
@@ -192,8 +198,9 @@ public sealed class CatalogServiceTests
             Name = "Tokyo"
         }, CancellationToken.None);
 
-        string catalogDirectory = _fileStorage.GetCatalogDirectory(catalog.Slug);
-        string imageDirectory = _fileStorage.GetImageDirectory(catalog.Slug, "image-1");
+        string catalogDirectory = Path.Combine(_tempRoot, "catalogs", catalog.Slug);
+        string imageDirectory = Path.Combine(catalogDirectory, "image-1");
+        Directory.CreateDirectory(imageDirectory);
         string originalPath = Path.Combine(imageDirectory, "original.tif");
         string normalizedPath = Path.Combine(imageDirectory, "normalized_3857.tif");
 

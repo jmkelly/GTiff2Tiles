@@ -260,6 +260,22 @@ public sealed class GdalWorkerTests
     }
 
     [Test]
+    public void CreateCog()
+    {
+        Assert.DoesNotThrowAsync(async () =>
+        {
+            await GdalWorker.CreateCogAsync(_in3785, _outPath, _progress).ConfigureAwait(false);
+
+            CheckHelper.CheckFile(_outPath);
+            string info = await GdalWorker.InfoAsync(_outPath).ConfigureAwait(false);
+
+            Assert.That(info, Does.Contain("LAYOUT=COG"));
+        });
+
+        File.Delete(_outPath);
+    }
+
+    [Test]
     public void ConvertGeoTiffToTargetSystem3395To4326()
     {
         Assert.DoesNotThrowAsync(async () =>

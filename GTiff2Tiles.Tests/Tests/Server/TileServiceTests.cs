@@ -43,15 +43,19 @@ public sealed class TileServiceTests
         _dbContext = new ServerDbContext(options);
         _dbContext.Database.EnsureCreated();
 
-        LocalFileStorage fileStorage = new(Options.Create(new LocalStorageOptions
-        {
-            RootPath = _tempRoot,
-            DatabasePath = Path.Combine(_tempRoot, "test.db")
-        }));
-        fileStorage.EnsureStorageLayout();
+        StorageFactory storageFactory = new(
+            Options.Create(new S3StorageOptions()),
+            Options.Create(new LocalStorageOptions
+            {
+                RootPath = _tempRoot,
+                DatabasePath = Path.Combine(_tempRoot, "test.db")
+            }));
+        Directory.CreateDirectory(_tempRoot);
+        Directory.CreateDirectory(Path.Combine(_tempRoot, "catalogs"));
 
         _tileRendererCache = new TileRendererCache();
-        _tileService = new TileService(_dbContext, _tileRendererCache);
+        StoragePathResolver pathResolver = new(Options.Create(new S3StorageOptions()));
+        _tileService = new TileService(_dbContext, _tileRendererCache, pathResolver);
     }
 
     [TearDown]
